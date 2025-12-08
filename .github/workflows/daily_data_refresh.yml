@@ -169,50 +169,40 @@ jobs:
           if [ -n "$REBUILD_FROM" ]; then
             # Manual rebuild from specific date
             START_DATE="$REBUILD_FROM"
-            DAYS=$(python3 -c "
-            from datetime import datetime
-            start = datetime.strptime('$START_DATE', '%Y-%m-%d')
-            today = datetime.strptime('$TODAY', '%Y-%m-%d')
-            print((today - start).days + 1)
-            ")
+            DAYS=$(python3 -c "from datetime import datetime; start = datetime.strptime('$START_DATE', '%Y-%m-%d'); today = datetime.strptime('$TODAY', '%Y-%m-%d'); print(max((today - start).days + 1, 0))")
             echo "🔧 Manual rebuild from $START_DATE ($DAYS days)"
           elif [ -n "$MANUAL_DAYS" ]; then
             # Manual days specified
             DAYS="$MANUAL_DAYS"
-            START_DATE=$(python3 -c "
-            from datetime import datetime, timedelta
-            today = datetime.strptime('$TODAY', '%Y-%m-%d')
-            start = today - timedelta(days=$DAYS - 1)
-            print(start.strftime('%Y-%m-%d'))
-            ")
+            START_DATE=$(python3 -c "from datetime import datetime, timedelta; today = datetime.strptime('$TODAY', '%Y-%m-%d'); start = today - timedelta(days=$DAYS - 1); print(start.strftime('%Y-%m-%d'))")
             echo "🔧 Manual: $DAYS days from $START_DATE"
           else
             # Auto-detect: generate from last_date+1 to today
-            START_DATE=$(python3 -c "
-            from datetime import datetime, timedelta
-            last = datetime.strptime('$LAST_DATE', '%Y-%m-%d')
-            start = last + timedelta(days=1)
-            print(start.strftime('%Y-%m-%d'))
-            ")
-            DAYS=$(python3 -c "
-            from datetime import datetime
-            start = datetime.strptime('$START_DATE', '%Y-%m-%d')
-            today = datetime.strptime('$TODAY', '%Y-%m-%d')
-            days = (today - start).days + 1
-            print(max(days, 1))
-            ")
-            echo "🤖 Auto-detected: $DAYS days from $START_DATE"
+            # If last_date >= today, no generation needed (days will be 0 or negative)
+            START_DATE=$(python3 -c "from datetime import datetime, timedelta; last = datetime.strptime('$LAST_DATE', '%Y-%m-%d'); start = last + timedelta(days=1); print(start.strftime('%Y-%m-%d'))")
+            DAYS=$(python3 -c "from datetime import datetime; start = datetime.strptime('$START_DATE', '%Y-%m-%d'); today = datetime.strptime('$TODAY', '%Y-%m-%d'); days = (today - start).days + 1; print(max(days, 0))")
+
+            if [ "$DAYS" -le 0 ]; then
+              echo "✅ Data is already up to date (last: $LAST_DATE, today: $TODAY)"
+              DAYS=0
+            else
+              echo "🤖 Auto-detected: $DAYS days from $START_DATE"
+            fi
           fi
 
           echo "start_date=$START_DATE" >> $GITHUB_OUTPUT
           echo "days=$DAYS" >> $GITHUB_OUTPUT
           echo "today=$TODAY" >> $GITHUB_OUTPUT
+          echo "skip_generation=$( [ "$DAYS" -le 0 ] && echo 'true' || echo 'false' )" >> $GITHUB_OUTPUT
 
           echo ""
           echo "📋 Generation Plan:"
           echo "   Start date: $START_DATE"
           echo "   Days to generate: $DAYS"
           echo "   End date: $TODAY"
+          if [ "$DAYS" -le 0 ]; then
+            echo "   Status: ✅ Data already current, skipping generation"
+          fi
 
       # ─── Clear Raw Data (Optional - for corruption recovery) ────────────
       - name: 🗑️ Clear Raw Data (if requested)
@@ -239,6 +229,7 @@ jobs:
 
       # ─── Generate Data ──────────────────────────────────────────────────
       - name: 📊 Generate Incremental Data
+        if: steps.plan.outputs.skip_generation != 'true'
         working-directory: data_generation
         env:
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
@@ -253,15 +244,15 @@ jobs:
           START_DATE="${{ steps.plan.outputs.start_date }}"
 
           echo "🎿 Generating $DAYS day(s) of ski resort data starting from $START_DATE..."
+          python generate_daily_increment.py \
+            --date "$START_DATE" \
+            --days "$DAYS" \
+            --connection default
 
-          if [ "$DAYS" -gt 0 ]; then
-            python generate_daily_increment.py \
-              --date "$START_DATE" \
-              --days "$DAYS" \
-              --connection default
-          else
-            echo "✅ Data is up to date, no generation needed"
-          fi
+      - name: ⏭️ Skip Data Generation
+        if: steps.plan.outputs.skip_generation == 'true'
+        run: |
+          echo "✅ Data is already current (last date: ${{ steps.check_data.outputs.last_date }}), skipping generation"
 
       # ─── DBT Setup & Run ────────────────────────────────────────────────
       - name: 📦 Install DBT
