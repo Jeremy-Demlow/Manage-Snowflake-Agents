@@ -1,10 +1,19 @@
-# Ski Resort Analytics Platform - Architecture
+# Ski Resort Analytics Platform
 
-> **A complete end-to-end analytics platform demonstrating Snowflake Cortex Intelligence capabilities with realistic ski resort operational data.**
+> **Powered by Snowflake Intelligence** - Natural language analytics for ski resort operations
 
-## Overview
+---
 
-This platform generates realistic ski resort operational data, transforms it using DBT dimensional modeling, exposes it through Snowflake Semantic Views, and enables natural language querying via Snowflake Cortex Agents accessible through Slack or direct API.
+## 🧠 Snowflake Intelligence at the Core
+
+This platform demonstrates the power of **Snowflake Cortex Intelligence** - enabling business users to ask questions in plain English and get instant, accurate answers from complex operational data.
+
+| Snowflake Intelligence Feature | How It's Used |
+|-------------------------------|---------------|
+| **Cortex Analyst** | Text-to-SQL via semantic models |
+| **Cortex Agent** | Multi-tool orchestration & reasoning |
+| **Semantic Views** | Business context for AI understanding |
+| **Cortex ML Functions** | Visitor forecasting & predictions |
 
 ---
 
@@ -12,116 +21,69 @@ This platform generates realistic ski resort operational data, transforms it usi
 
 ```mermaid
 graph TB
-    subgraph "Data Generation Layer"
-        GEN[🎿 generate_daily_increment.py<br/>8,000 customers • 18 lifts<br/>Realistic seasonal patterns]
-        SCHED[⏰ GitHub Actions<br/>Daily 5am PST<br/>Auto-backfill gaps]
+    subgraph Users["👤 Users"]
+        USER[Business Users]
     end
 
-    subgraph "Snowflake: SKI_RESORT_DB"
-        subgraph "RAW Schema (12 tables)"
-            RAW1[PASS_USAGE<br/>LIFT_SCANS<br/>TICKET_SALES]
-            RAW2[FOOD_BEVERAGE<br/>RENTALS<br/>SKI_LESSONS]
-            RAW3[WEATHER_CONDITIONS<br/>STAFFING_SCHEDULE<br/>INCIDENTS]
-            RAW4[CUSTOMER_FEEDBACK<br/>PARKING_OCCUPANCY<br/>GROOMING_LOGS]
-        end
-
-        subgraph "Reference Data"
-            REF[CUSTOMERS (8,000)<br/>LIFTS (18)<br/>LOCATIONS<br/>EMPLOYEES<br/>PRODUCTS]
-        end
-
-        subgraph "DBT Transformations"
-            STAGE[Staging Models<br/>Data cleaning & typing]
-            DIMS[Dimension Tables<br/>dim_date • dim_customer<br/>dim_lift • dim_location<br/>dim_product • dim_ticket_type]
-            FACTS[Fact Tables (Incremental)<br/>fact_lift_scans<br/>fact_pass_usage<br/>fact_ticket_sales<br/>fact_rentals<br/>fact_food_beverage]
-        end
-
-        subgraph "SEMANTIC Schema"
-            SEM1[sem_customer_behavior<br/>Segments • LTV • Churn risk]
-            SEM2[sem_operations<br/>Lift utilization • Wait times]
-            SEM3[sem_revenue<br/>Revenue by source • Trends]
-        end
+    subgraph Interfaces["💬 Interfaces"]
+        SLACK[Slackbot]
+        API[REST API]
     end
 
-    subgraph "Cortex Intelligence"
-        ANALYST[Cortex Analyst<br/>Text-to-SQL<br/>Semantic model aware]
-        AGENT[RESORT_EXECUTIVE_DEV<br/>Snowflake Intelligence Agent]
+    subgraph Intelligence["❄️ SNOWFLAKE INTELLIGENCE"]
+        direction TB
+        AGENT[🧠 Cortex Agent<br/>RESORT_EXECUTIVE_DEV]
+        ANALYST[📊 Cortex Analyst<br/>Text-to-SQL]
+        TOOLS[🔧 Agent Tools<br/>Email • Forecast • Alerts]
     end
 
-    subgraph "Agent Tools"
-        TOOL1[📊 Cortex Analyst Tool<br/>Query semantic views]
-        TOOL2[📈 Forecasting Tools<br/>ML visitor predictions]
-        TOOL3[📧 Email Tool<br/>Send formatted reports]
-        TOOL4[⏰ Alert Scheduler<br/>Scheduled insights]
+    subgraph Semantic["📐 Semantic Layer"]
+        SEM1[sem_customer_behavior]
+        SEM2[sem_operations]
+        SEM3[sem_revenue]
     end
 
-    subgraph "Interfaces"
-        SLACK[🤖 Slackbot<br/>Natural language queries<br/>Rich Block Kit responses]
-        API[REST API<br/>Direct agent calls]
+    subgraph DataWarehouse["❄️ Snowflake Data Warehouse"]
+        FACTS[Fact Tables]
+        DIMS[Dimension Tables]
+        RAW[Raw Data - 12 tables]
     end
 
-    subgraph "Users"
-        USER[👤 Business Users<br/>Executives • Analysts<br/>Operations teams]
+    subgraph Pipeline["⚙️ Data Pipeline"]
+        DBT[DBT Transformations]
+        GEN[Data Generator]
+        GHA[GitHub Actions - Daily 5am PST]
     end
 
-    %% Data Flow
-    SCHED --> GEN
-    GEN --> RAW1
-    GEN --> RAW2
-    GEN --> RAW3
-    GEN --> RAW4
-    GEN --> REF
+    USER --> SLACK
+    USER --> API
+    SLACK --> AGENT
+    API --> AGENT
+    AGENT --> ANALYST
+    AGENT --> TOOLS
+    ANALYST --> SEM1
+    ANALYST --> SEM2
+    ANALYST --> SEM3
+    SEM1 --> FACTS
+    SEM2 --> FACTS
+    SEM3 --> FACTS
+    FACTS --> DIMS
+    DIMS --> RAW
+    RAW --> DBT
+    DBT --> GEN
+    GEN --> GHA
 
-    RAW1 --> STAGE
-    RAW2 --> STAGE
-    RAW3 --> STAGE
-    RAW4 --> STAGE
-    REF --> STAGE
-
-    STAGE --> DIMS
-    STAGE --> FACTS
-    DIMS --> FACTS
-
-    FACTS --> SEM1
-    FACTS --> SEM2
-    FACTS --> SEM3
-    DIMS --> SEM1
-    DIMS --> SEM2
-    DIMS --> SEM3
-
-    SEM1 --> ANALYST
-    SEM2 --> ANALYST
-    SEM3 --> ANALYST
-
-    ANALYST --> TOOL1
-    TOOL1 --> AGENT
-    TOOL2 --> AGENT
-    TOOL3 --> AGENT
-    TOOL4 --> AGENT
-
-    AGENT --> SLACK
-    AGENT --> API
-
-    SLACK --> USER
-    API --> USER
-
-    %% Styling
-    classDef generation fill:#e3f2fd,stroke:#1976d2
-    classDef raw fill:#fce4ec,stroke:#c2185b
-    classDef ref fill:#f3e5f5,stroke:#7b1fa2
-    classDef dbt fill:#e8f5e9,stroke:#388e3c
+    classDef intelligence fill:#29b5e8,stroke:#1a8cba,color:#fff
     classDef semantic fill:#fff3e0,stroke:#f57c00
-    classDef cortex fill:#e1f5fe,stroke:#0288d1
-    classDef tools fill:#f1f8e9,stroke:#689f38
+    classDef warehouse fill:#e3f2fd,stroke:#1976d2
+    classDef pipeline fill:#e8f5e9,stroke:#388e3c
     classDef interface fill:#ede7f6,stroke:#512da8
     classDef user fill:#fafafa,stroke:#616161
 
-    class GEN,SCHED generation
-    class RAW1,RAW2,RAW3,RAW4 raw
-    class REF ref
-    class STAGE,DIMS,FACTS dbt
+    class AGENT,ANALYST,TOOLS intelligence
     class SEM1,SEM2,SEM3 semantic
-    class ANALYST,AGENT cortex
-    class TOOL1,TOOL2,TOOL3,TOOL4 tools
+    class FACTS,DIMS,RAW warehouse
+    class DBT,GEN,GHA pipeline
     class SLACK,API interface
     class USER user
 ```
