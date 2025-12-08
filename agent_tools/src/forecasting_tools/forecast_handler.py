@@ -104,31 +104,45 @@ def forecast_visitors(
             }
         )
 
-    # Get historical data for lag features
-    query = fe.get_training_query(
-        database="SKI_RESORT_DB", schema="MARTS", years_back=1
-    )
-    raw_df = session.sql(query).to_pandas()
-    hist_df = fe.engineer(raw_df)
-
-    # Get feature columns
-    feature_cols = fe.get_feature_columns(hist_df)
-
-    # Calculate recent values for predictions (must match all lag/rolling features)
-    recent_values = {
-        "lag_7": float(hist_df["UNIQUE_VISITORS"].tail(7).mean()),
-        "lag_14": float(hist_df["UNIQUE_VISITORS"].tail(14).mean()),
-        "lag_21": float(hist_df["UNIQUE_VISITORS"].tail(21).mean()),
-        "lag_28": float(hist_df["UNIQUE_VISITORS"].tail(28).mean()),
-        "rolling_7_mean": float(hist_df["UNIQUE_VISITORS"].tail(7).mean()),
-        "rolling_14_mean": float(hist_df["UNIQUE_VISITORS"].tail(14).mean()),
-        "rolling_30_mean": float(hist_df["UNIQUE_VISITORS"].tail(30).mean()),
-    }
-
-    # Get weather defaults for target month
+    # Get historical data with actual visitor counts by date
     start_date = pd.to_datetime(forecast_start_date)
     target_month = start_date.month
 
+    # Get recent historical data for lag calculations (need at least 30 days back)
+    history_query = f"""
+    SELECT
+        d.FULL_DATE,
+        d.DAY_OF_WEEK,
+        COUNT(DISTINCT p.CUSTOMER_KEY) as UNIQUE_VISITORS
+    FROM SKI_RESORT_DB.MARTS.DIM_DATE d
+    LEFT JOIN SKI_RESORT_DB.MARTS.FACT_PASS_USAGE p ON d.DATE_KEY = p.DATE_KEY
+    WHERE d.FULL_DATE >= DATEADD('day', -60, '{start_date.strftime('%Y-%m-%d')}'::DATE)
+      AND d.FULL_DATE < '{start_date.strftime('%Y-%m-%d')}'::DATE
+    GROUP BY d.FULL_DATE, d.DAY_OF_WEEK
+    ORDER BY d.FULL_DATE
+    """
+    hist_df = session.sql(history_query).to_pandas()
+    hist_df["FULL_DATE"] = pd.to_datetime(hist_df["FULL_DATE"])
+    hist_df = hist_df.set_index("FULL_DATE")
+
+    # Get same-day-of-week averages for the target month (more accurate baseline)
+    dow_query = f"""
+    SELECT
+        d.DAY_OF_WEEK,
+        AVG(cnt.visitors) as avg_visitors
+    FROM SKI_RESORT_DB.MARTS.DIM_DATE d
+    JOIN (
+        SELECT DATE_KEY, COUNT(DISTINCT CUSTOMER_KEY) as visitors
+        FROM SKI_RESORT_DB.MARTS.FACT_PASS_USAGE
+        GROUP BY DATE_KEY
+    ) cnt ON d.DATE_KEY = cnt.DATE_KEY
+    WHERE d.MONTH_NUM = {target_month}
+    GROUP BY d.DAY_OF_WEEK
+    """
+    dow_df = session.sql(dow_query).to_pandas()
+    dow_avgs = dict(zip(dow_df["DAY_OF_WEEK"], dow_df["AVG_VISITORS"]))
+
+    # Get weather for target month
     weather_query = f"""
     SELECT
         AVG(w.SNOWFALL_INCHES) as avg_snowfall,
@@ -151,14 +165,43 @@ def forecast_visitors(
         "is_high_wind": 0,
     }
 
-    # Build features using FeatureEngineer
-    future_df = fe.build_future_features(
-        start_date=forecast_start_date,
-        days_ahead=int(days_ahead),
-        recent_values=recent_values,
-        weather_forecast=weather_forecast,
-    )
-    input_df = future_df[feature_cols].astype(float)
+    # Build features for each forecast day with ACTUAL lag values
+    feature_cols = fe.get_feature_columns()
+    forecast_dates = [start_date + timedelta(days=i) for i in range(int(days_ahead))]
+
+    input_rows = []
+    for forecast_date in forecast_dates:
+        # Calculate actual lag values from historical data
+        recent_values = {}
+        for lag in [7, 14, 21, 28]:
+            lag_date = forecast_date - timedelta(days=lag)
+            if lag_date in hist_df.index:
+                recent_values[f"lag_{lag}"] = float(
+                    hist_df.loc[lag_date, "UNIQUE_VISITORS"]
+                )
+            else:
+                # Fallback: use same-day-of-week average
+                dow = lag_date.dayofweek
+                recent_values[f"lag_{lag}"] = float(dow_avgs.get(dow, 400))
+
+        # Rolling features from actual history
+        for window in [7, 14, 30]:
+            window_start = forecast_date - timedelta(days=window)
+            window_data = hist_df[hist_df.index >= window_start]["UNIQUE_VISITORS"]
+            recent_values[f"rolling_{window}_mean"] = (
+                float(window_data.mean()) if len(window_data) > 0 else 400.0
+            )
+
+        # Build features for this single day
+        day_df = fe.build_future_features(
+            start_date=forecast_date,
+            days_ahead=1,
+            recent_values=recent_values,
+            weather_forecast=weather_forecast,
+        )
+        input_rows.append(day_df.iloc[0])
+
+    input_df = pd.DataFrame(input_rows)[feature_cols].astype(float)
 
     # Make predictions
     try:
