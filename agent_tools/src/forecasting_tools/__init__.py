@@ -9,8 +9,8 @@ Components:
 - config/: YAML configuration files
 """
 
-from .forecast_handler import forecast_visitors_ml
+from .forecast_handler import forecast_visitors
 
 __all__ = [
-    "forecast_visitors_ml",
+    "forecast_visitors",
 ]
