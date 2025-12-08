@@ -75,11 +75,51 @@ jobs:
           pip install --upgrade pip
           pip install "snowflake-snowpark-python[pandas]" pandas pyarrow numpy pyyaml toml pydantic cryptography
 
-      # ─── Generate Incremental Data ───────────────────────────────────────
+      # ─── Check Data Coverage & Backfill ─────────────────────────────────
+      - name: 🔍 Check Data Coverage
+        id: check_coverage
+        run: |
+          echo "📊 Checking existing data coverage..."
+
+          # Get the latest date in the data
+          LATEST_DATE=$(snow sql -q "
+            SELECT COALESCE(MAX(VISIT_DATE), '2025-12-01')::DATE as latest_date
+            FROM SKI_RESORT_DB.RAW.PASS_USAGE
+          " --format json 2>/dev/null | python3 -c "import sys,json; data=json.load(sys.stdin); print(data[0]['LATEST_DATE'] if data else '2025-12-01')" || echo "2025-12-01")
+
+          echo "Latest date in data: $LATEST_DATE"
+
+          # Calculate days to backfill (from latest_date+1 to today)
+          TODAY=$(date +%Y-%m-%d)
+          DAYS_MISSING=$(python3 -c "
+          from datetime import datetime, timedelta
+          latest = datetime.strptime('$LATEST_DATE', '%Y-%m-%d')
+          today = datetime.strptime('$TODAY', '%Y-%m-%d')
+          # Generate from the day after latest through today
+          days = (today - latest).days
+          print(max(days, 1))  # At least 1 day
+          ")
+
+          # Calculate start date (day after latest)
+          START_DATE=$(python3 -c "
+          from datetime import datetime, timedelta
+          latest = datetime.strptime('$LATEST_DATE', '%Y-%m-%d')
+          start = latest + timedelta(days=1)
+          print(start.strftime('%Y-%m-%d'))
+          ")
+
+          echo "Today: $TODAY"
+          echo "Days to generate: $DAYS_MISSING"
+          echo "Start date: $START_DATE"
+
+          # Set outputs for next step
+          echo "days_missing=$DAYS_MISSING" >> $GITHUB_OUTPUT
+          echo "start_date=$START_DATE" >> $GITHUB_OUTPUT
+          echo "latest_date=$LATEST_DATE" >> $GITHUB_OUTPUT
+
       - name: 📊 Generate Incremental Data
         working-directory: data_generation
         env:
-          # Also set standard env vars for Python scripts
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
           SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
@@ -88,12 +128,19 @@ jobs:
           SNOWFLAKE_DATABASE: SKI_RESORT_DB
           SNOWFLAKE_SCHEMA: RAW
         run: |
-          echo "🎿 Generating ski resort data for $(date +%Y-%m-%d)..."
-          DAYS="${{ github.event.inputs.days || '1' }}"
-          python generate_daily_increment.py \
-            --date $(date +%Y-%m-%d) \
-            --days $DAYS \
-            --connection default
+          DAYS="${{ github.event.inputs.days || steps.check_coverage.outputs.days_missing }}"
+          START_DATE="${{ steps.check_coverage.outputs.start_date }}"
+
+          echo "🎿 Generating $DAYS day(s) of ski resort data starting from $START_DATE..."
+
+          if [ "$DAYS" -gt 0 ]; then
+            python generate_daily_increment.py \
+              --date "$START_DATE" \
+              --days "$DAYS" \
+              --connection default
+          else
+            echo "✅ Data is up to date, no backfill needed"
+          fi
 
       # ─── DBT Setup & Run ─────────────────────────────────────────────────
       - name: 📦 Install DBT
@@ -151,11 +198,16 @@ jobs:
         run: |
           echo "## 🎿 Daily Data Refresh Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Date:** $(date '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "**Run Date:** $(date '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Data Coverage:" >> $GITHUB_STEP_SUMMARY
+          echo "- **Previous latest date:** ${{ steps.check_coverage.outputs.latest_date }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Days generated:** ${{ steps.check_coverage.outputs.days_missing }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Start date:** ${{ steps.check_coverage.outputs.start_date }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Steps Completed:" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Snowflake CLI configured (official action)" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Generated incremental data" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Checked data coverage" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Generated incremental data (backfilled gaps)" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Ran DBT fact tables" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Refreshed semantic views" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Verified data load" >> $GITHUB_STEP_SUMMARY
