@@ -1,0 +1,66 @@
+# Slack Bot Configuration
+# ========================
+# Edit this file to configure your agents and bot behavior
+
+# Default settings
+defaults:
+  timeout: 120
+  max_context_messages: 10
+  context_ttl_hours: 1
+
+# Snowflake connection
+snowflake:
+  account: ${SNOWFLAKE_ACCOUNT}  # From environment
+
+# Available agents
+# ----------------
+# Each agent maps to a Snowflake Cortex Agent
+# Use the "default" agent for most questions
+
+agents:
+  # Main ski resort executive assistant (default)
+  default:
+    name: RESORT_EXECUTIVE_DEV
+    database: SKI_RESORT_DB
+    schema: AGENTS
+    description: "Ski resort analytics - operations, revenue, customers"
+    slash_command: /ask
+    emoji: "🎿"
+
+  # Same agent, different alias for specific use
+  executive:
+    name: RESORT_EXECUTIVE_DEV
+    database: SKI_RESORT_DB
+    schema: AGENTS
+    description: "Executive-level resort intelligence"
+    slash_command: /exec
+    emoji: "📊"
+
+  # Add more agents as needed:
+  # operations:
+  #   name: LIFT_OPERATIONS_AGENT
+  #   database: SKI_RESORT_DB
+  #   schema: AGENTS
+  #   description: "Lift and terrain operations"
+  #   slash_command: /ops
+  #   emoji: "🚡"
+
+# Slack configuration
+slack:
+  # Progress update settings
+  progress:
+    update_interval_seconds: 5
+    show_milestones: true
+
+  # Response formatting
+  formatting:
+    max_response_length: 2500
+    max_table_rows: 15
+    show_sql: true
+    show_timing: true
+    show_data_export: true
+
+  # Chart rendering (requires altair + vl-convert-python)
+  charts:
+    enabled: true
+    scale: 2  # PNG scale factor

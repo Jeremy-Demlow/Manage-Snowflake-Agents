@@ -1,0 +1,37 @@
+{
+  "business_intelligence": [
+    "What's our total revenue this quarter?",
+    "How many jobs were completed last month?",
+    "Show me our top performing technicians",
+    "What's the average job value?",
+    "How many customers do we have?"
+  ],
+  "contracts": [
+    "Which contracts are at risk of churn?",
+    "What's our contract renewal rate?",
+    "Show me contracts expiring next month",
+    "Which customers have the highest contract value?",
+    "What are the common contract terms?"
+  ],
+  "performance": [
+    "What are the slowest queries today?",
+    "Show me warehouse usage patterns",
+    "Which queries are consuming the most credits?",
+    "What compilation errors am I seeing?",
+    "Analyze query performance trends"
+  ],
+  "documents": [
+    "What's in our safety policy?",
+    "Show me information about HVAC installation",
+    "What are our customer service standards?",
+    "Search for training procedures",
+    "What does our annual report say about growth?"
+  ],
+  "simple_test": [
+    "Hello, are you working?",
+    "What can you help me with?",
+    "Show me a test response",
+    "Can you access the data?",
+    "What agents are available?"
+  ]
+}

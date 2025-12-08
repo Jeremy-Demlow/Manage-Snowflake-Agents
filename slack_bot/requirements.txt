@@ -1,0 +1,17 @@
+# Snowflake Intelligence Slack Bot
+# ================================
+
+# Core - Always needed
+requests>=2.31.0
+pyyaml>=6.0
+
+# Slack integration
+slack-bolt>=1.18.0
+
+# Chart rendering (optional - enables Vega-Lite to PNG)
+altair>=5.0.0
+vl-convert-python>=1.0.0
+
+# Development (optional)
+# jupyter>=1.0.0
+# ipykernel>=6.0.0

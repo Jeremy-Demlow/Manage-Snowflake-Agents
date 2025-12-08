@@ -1,0 +1,46 @@
+# =============================================================================
+# DEVELOPMENT ENVIRONMENT CONFIGURATION
+# =============================================================================
+# Purpose: Local development and testing of agents
+# Pattern: Agents live in data database, then get added to Snowflake Intelligence
+# =============================================================================
+
+environment: dev
+
+# Snowflake connection
+snowflake:
+  connection_name: snowflake_agents  # Snow CLI connection name
+
+# Agent deployment location (agents live WITH your data)
+agent_deployment:
+  database: SKI_RESORT_DB
+  schema: AGENTS
+
+  # Whether to add to Snowflake Intelligence for UI visibility
+  add_to_snowflake_intelligence: true
+
+# Data sources
+data_sources:
+  database: SKI_RESORT_DB
+  semantic_schema: SEMANTIC
+
+# Compute
+warehouse: COMPUTE_WH
+
+# Orchestration model
+# Options: auto, claude-haiku-4-5, claude-sonnet-4-5, claude-sonnet-4,
+#          claude-sonnet-3-7, claude-sonnet-3-5, gpt-5, gpt-4-1
+model:
+  orchestration: claude-sonnet-4-5
+
+# Development-specific settings
+settings:
+  log_level: DEBUG
+  enable_testing: true
+  version_suffix: "_DEV"  # DEV suffix for dev agents
+  strict_validation: false
+
+# Promotion criteria to staging
+promotion_criteria:
+  min_test_coverage: 50
+  required_reviews: 0

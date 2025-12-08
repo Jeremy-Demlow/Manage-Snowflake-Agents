@@ -1,0 +1,156 @@
+definition_version: 2
+
+env:
+  database: "SKI_RESORT_DB"
+  schema: "MARTS"
+  warehouse: "SNOWPARK_WH"
+  stage: "AGENT_TOOLS_STAGE"
+
+entities:
+  # Email Tool
+  send_mail:
+    type: "procedure"
+    identifier:
+      name: "send_mail"
+      database: "AGENT_TOOLS_CENTRAL"
+      schema: "AGENT_TOOLS"
+    handler: "email_tools.sender.send_email_for_agent"
+    signature:
+      - name: "recipient"
+        type: "TEXT"
+      - name: "subject"
+        type: "TEXT"
+      - name: "text"
+        type: "TEXT"
+    returns: "TEXT"
+    stage: "AGENT_TOOLS_CENTRAL.AGENT_TOOLS.AGENT_TOOLS_STAGE"
+    artifacts: ["src/"]
+    runtime: "3.10"
+    artifact_repository: "snowflake.snowpark.pypi_shared_repository"
+    packages:
+      - snowflake-snowpark-python
+
+  # Web Scraper Tool
+  web_scrape:
+    type: "procedure"
+    identifier:
+      name: "web_scrape"
+      database: "AGENT_TOOLS_CENTRAL"
+      schema: "AGENT_TOOLS"
+    handler: "web_tools.scraper.scrape_website_for_agent"
+    signature:
+      - name: "url"
+        type: "TEXT"
+    returns: "TEXT"
+    stage: "AGENT_TOOLS_CENTRAL.AGENT_TOOLS.AGENT_TOOLS_STAGE"
+    artifacts: ["src/"]
+    runtime: "3.10"
+    external_access_integrations: ["AGENT_TOOLS_EXTERNAL_ACCESS_INTEGRATION"]
+    artifact_repository: "snowflake.snowpark.pypi_shared_repository"
+    packages:
+      - snowflake-snowpark-python
+      - requests
+      - beautifulsoup4
+
+  # ML-powered Visitor Forecasting (requires Snowpark-optimized warehouse)
+  # NOTE: Forecasting procedures require Snowpark-optimized warehouse
+  # Uncomment and deploy separately with: USE WAREHOUSE <snowpark_wh>
+  # forecast_visitors_ml:
+  #   type: "procedure"
+  #   identifier:
+  #     name: "forecast_visitors_ml"
+  #     database: "SKI_RESORT_DB"
+  #     schema: "MARTS"
+  #   handler: "forecasting_tools.forecast_handler.forecast_visitors"
+  #   signature:
+  #     - name: "forecast_start_date"
+  #       type: "DATE"
+  #     - name: "days_ahead"
+  #       type: "NUMBER"
+  #       default: 7
+  #   returns: "TEXT"
+  #   stage: "SKI_RESORT_DB.MARTS.AGENT_TOOLS_STAGE"
+  #   artifacts: ["src/"]
+  #   runtime: "3.10"
+  #   artifact_repository: "snowflake.snowpark.pypi_shared_repository"
+  #   packages:
+  #     - snowflake-snowpark-python
+  #     - snowflake-ml-python
+  #     - xgboost
+  #     - pyyaml
+  #     - pandas
+  #     - numpy
+  #   resource_constraint:
+  #     architecture: "x86"
+  #
+  # forecast_next_week:
+  #   type: "procedure"
+  #   identifier:
+  #     name: "forecast_next_week"
+  #     database: "SKI_RESORT_DB"
+  #     schema: "MARTS"
+  #   handler: "forecasting_tools.forecast_handler.forecast_next_week"
+  #   signature: []
+  #   returns: "TEXT"
+  #   stage: "SKI_RESORT_DB.MARTS.AGENT_TOOLS_STAGE"
+  #   artifacts: ["src/"]
+  #   runtime: "3.10"
+  #   artifact_repository: "snowflake.snowpark.pypi_shared_repository"
+  #   packages:
+  #     - snowflake-snowpark-python
+  #     - snowflake-ml-python
+  #     - xgboost
+  #     - pyyaml
+  #     - pandas
+  #     - numpy
+  #   resource_constraint:
+  #     architecture: "x86"
+
+  # Scheduled Alerts Processing
+  process_scheduled_alerts:
+    type: "procedure"
+    identifier:
+      name: "process_scheduled_alerts"
+      database: "SKI_RESORT_DB"
+      schema: "AGENTS"
+    handler: "scheduled_alerts.alerts.process_alerts"
+    signature: []
+    returns: "TEXT"
+    stage: "SKI_RESORT_DB.AGENTS.ALERTS_STAGE"
+    artifacts: ["src/"]
+    runtime: "3.11"
+    artifact_repository: "snowflake.snowpark.pypi_shared_repository"
+    external_access_integrations:
+      - ALLOW_ALL_ACCESS_INTEGRATION
+    packages:
+      - snowflake-snowpark-python
+      - markdown
+      - requests
+      - premailer
+
+  # Send Single Alert (for testing and immediate sends)
+  send_alert_now_py:
+    type: "procedure"
+    identifier:
+      name: "send_alert_now_py"
+      database: "SKI_RESORT_DB"
+      schema: "AGENTS"
+    handler: "scheduled_alerts.alerts.send_alert_now"
+    signature:
+      - name: "user_email"
+        type: "TEXT"
+      - name: "question"
+        type: "TEXT"
+    returns: "TEXT"
+    stage: "SKI_RESORT_DB.AGENTS.ALERTS_STAGE"
+    artifacts: ["src/"]
+    runtime: "3.11"
+    artifact_repository: "snowflake.snowpark.pypi_shared_repository"
+    external_access_integrations:
+      - ALLOW_ALL_ACCESS_INTEGRATION
+    execute_as_caller: true
+    packages:
+      - snowflake-snowpark-python
+      - markdown
+      - requests
+      - premailer

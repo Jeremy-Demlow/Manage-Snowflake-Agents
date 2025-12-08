@@ -1,0 +1,19 @@
+# DBT Profile for Ski Resort Analytics
+# Uses Snow CLI connection for authentication
+
+dbt_ski_resort:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: trb65519
+      user: "{{ env_var('SNOWFLAKE_USER', 'jd_service_account_admin') }}"
+      # Authentication via password from env or Snow CLI config
+      password: "{{ env_var('SNOWFLAKE_PASSWORD', '') }}"
+      # Database configuration
+      database: SKI_RESORT_DB
+      warehouse: COMPUTE_WH
+      schema: MARTS
+      role: ACCOUNTADMIN
+      threads: 4
+      client_session_keep_alive: False

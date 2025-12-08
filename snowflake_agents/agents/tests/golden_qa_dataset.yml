@@ -1,0 +1,174 @@
+# =============================================================================
+# GOLDEN QUESTION-ANSWER DATASET - VALIDATED AGAINST ACTUAL DATA
+# =============================================================================
+# These answers are validated against actual data in SKI_RESORT_DB.
+# Run: python validate_golden_answers.py to verify accuracy.
+#
+# Data validation performed: 2025-11-25
+# =============================================================================
+
+version: "1.1"
+created: "2025-11-25"
+validated: "2025-11-25"
+
+# =============================================================================
+# SKI OPERATIONS ASSISTANT - Validated Answers
+# =============================================================================
+ski_ops_assistant:
+  description: "Operations questions validated against FACT_LIFT_SCANS, FACT_STAFFING, FACT_WEATHER"
+
+  questions:
+    - question: "What are the average wait times by lift?"
+      golden_answer: |
+        Based on lift operations data, wait times are remarkably consistent across all lifts,
+        averaging approximately 11.7-11.8 minutes.
+
+        Top lifts by average wait time:
+        - West Bowl: 11.79 min (highest)
+        - Learners Lift: 11.79 min
+        - Eagle Ridge: 11.78 min
+        - Terrain Park Express: 11.78 min
+        - Summit Express: 11.77 min
+
+        Wait times are uniform across the mountain, ranging from 11.7 to 11.8 minutes.
+        All lifts operate well under peak wait targets.
+      expected_tool: "LiftOperationsAnalytics"
+      validation_query: "SELECT l.LIFT_NAME, ROUND(AVG(f.WAIT_TIME_MINUTES), 2) as AVG_WAIT FROM SKI_RESORT_DB.MARTS.FACT_LIFT_SCANS f JOIN SKI_RESORT_DB.MARTS.DIM_LIFT l ON f.LIFT_KEY = l.LIFT_KEY GROUP BY l.LIFT_NAME ORDER BY AVG_WAIT DESC LIMIT 5"
+
+    - question: "Which departments are understaffed?"
+      golden_answer: |
+        Based on staffing coverage ratios, the departments ranked by coverage (lowest first):
+
+        1. Ticketing: 97.2% average coverage (lowest/most understaffed)
+        2. Rental Services: 97.4% average coverage
+        3. Guest Services: 97.5% average coverage
+        4. Food & Beverage: 97.6% average coverage
+        5. Lift Operations: 97.7% average coverage
+
+        Ticketing is the most understaffed department with the lowest coverage ratio.
+        All departments maintain coverage above 97%.
+      expected_tool: "StaffingAnalytics"
+      validation_query: "SELECT DEPARTMENT, ROUND(AVG(COVERAGE_RATIO), 3) as AVG_COVERAGE FROM SKI_RESORT_DB.MARTS.FACT_STAFFING GROUP BY DEPARTMENT ORDER BY AVG_COVERAGE ASC"
+
+    - question: "How many powder days did we have?"
+      golden_answer: |
+        Based on the weather data, we had 746 powder days total.
+
+        A powder day is defined as 6 or more inches of new snowfall.
+        This count spans all recorded weather data across all mountain zones.
+      expected_tool: "WeatherAnalytics"
+      validation_query: "SELECT COUNT(*) as POWDER_DAYS FROM SKI_RESORT_DB.MARTS.FACT_WEATHER WHERE SNOWFALL_INCHES >= 6"
+
+
+# =============================================================================
+# CUSTOMER INSIGHTS ASSISTANT - Validated Answers
+# =============================================================================
+customer_insights:
+  description: "Customer questions validated against FACT_PASS_USAGE, DIM_CUSTOMER"
+
+  questions:
+    - question: "What are our customer segments and their visit patterns?"
+      golden_answer: |
+        Based on pass usage and customer data, here are our customer segments:
+
+        1. Local Pass Holders: 1,200 customers
+           - 76,055 total visits
+           - ~63 visits per customer average
+           - 20.0 average lift rides per visit
+
+        2. Weekend Warriors: 2,000 customers
+           - 55,128 total visits
+           - ~28 visits per customer average
+           - 12.5 average lift rides per visit
+
+        3. Vacation Families: 2,400 customers (largest segment)
+           - 39,083 total visits
+           - ~16 visits per customer average
+           - 8.0 average lift rides per visit
+
+        4. Expert Skiers: 400 customers
+           - 28,014 total visits
+           - ~70 visits per customer average (most active)
+           - 23.0 average lift rides per visit (highest)
+
+        5. Day Trippers: 1,584 customers
+           - 7,312 total visits
+           - ~5 visits per customer average
+           - 10.0 average lift rides per visit
+
+        6. Group/Corporate: 236 customers
+           - 874 total visits
+           - 7.5 average lift rides per visit
+
+        7. Beginners: 160 customers
+           - 991 total visits
+           - 5.5 average lift rides per visit (lowest)
+      expected_tool: "CustomerBehaviorAnalytics"
+      validation_query: "SELECT c.CUSTOMER_SEGMENT, COUNT(DISTINCT p.CUSTOMER_KEY) as CUSTOMERS, COUNT(*) as VISITS, ROUND(AVG(p.TOTAL_LIFT_RIDES), 1) as AVG_RIDES FROM SKI_RESORT_DB.MARTS.FACT_PASS_USAGE p JOIN SKI_RESORT_DB.MARTS.DIM_CUSTOMER c ON p.CUSTOMER_KEY = c.CUSTOMER_KEY GROUP BY c.CUSTOMER_SEGMENT ORDER BY VISITS DESC"
+
+    - question: "Which customer segment has the highest lifetime value?"
+      golden_answer: |
+        Based on visit frequency and behavior, the segments ranked by value:
+
+        1. Expert Skiers - Highest engagement
+           - Average 70 visits per customer
+           - 23.0 lift rides per visit (most active on mountain)
+           - 400 customers total
+
+        2. Local Pass Holders - High frequency
+           - Average 63 visits per customer
+           - 20.0 lift rides per visit
+           - 1,200 customers (3x the experts)
+
+        3. Weekend Warriors - Consistent visitors
+           - Average 28 visits per customer
+           - 12.5 lift rides per visit
+           - 2,000 customers
+
+        Expert skiers show highest per-customer engagement, while local pass holders
+        provide highest total volume due to larger customer base.
+      expected_tool: "PassholderAnalytics"
+      validation_query: "SELECT c.CUSTOMER_SEGMENT, COUNT(DISTINCT p.CUSTOMER_KEY) as CUSTOMERS, ROUND(COUNT(*) * 1.0 / COUNT(DISTINCT p.CUSTOMER_KEY), 1) as VISITS_PER_CUSTOMER FROM SKI_RESORT_DB.MARTS.FACT_PASS_USAGE p JOIN SKI_RESORT_DB.MARTS.DIM_CUSTOMER c ON p.CUSTOMER_KEY = c.CUSTOMER_KEY GROUP BY c.CUSTOMER_SEGMENT ORDER BY VISITS_PER_CUSTOMER DESC"
+
+
+# =============================================================================
+# RESORT EXECUTIVE ASSISTANT - Validated Answers
+# =============================================================================
+resort_executive:
+  description: "Executive questions validated against all fact tables"
+
+  questions:
+    - question: "What was our total revenue?"
+      golden_answer: |
+        Based on all revenue data, here's the breakdown:
+
+        Total Revenue: $14,429,356
+
+        By Category:
+        1. Food & Beverage: $6,215,687 (43%)
+        2. Tickets & Passes: $5,188,206 (36%)
+        3. Rentals: $3,025,463 (21%)
+
+        Food & Beverage is actually the largest revenue category, followed by
+        tickets/passes and then rentals.
+      expected_tool: "RevenueAnalytics"
+      validation_query: "SELECT 'Tickets' as CATEGORY, SUM(PURCHASE_AMOUNT) as REVENUE FROM SKI_RESORT_DB.MARTS.FACT_TICKET_SALES UNION ALL SELECT 'F&B', SUM(TOTAL_AMOUNT) FROM SKI_RESORT_DB.MARTS.FACT_FOOD_BEVERAGE UNION ALL SELECT 'Rentals', SUM(RENTAL_AMOUNT) FROM SKI_RESORT_DB.MARTS.FACT_RENTALS"
+
+    - question: "How many total visits did we have?"
+      golden_answer: |
+        Based on pass usage data:
+
+        Total Visits: 207,457
+
+        By Customer Segment:
+        - Local Pass Holders: 76,055 visits (37%)
+        - Weekend Warriors: 55,128 visits (27%)
+        - Vacation Families: 39,083 visits (19%)
+        - Expert Skiers: 28,014 visits (13%)
+        - Day Trippers: 7,312 visits (4%)
+        - Beginners: 991 visits (<1%)
+        - Group/Corporate: 874 visits (<1%)
+
+        Local pass holders and weekend warriors together account for 64% of all visits.
+      expected_tool: "DailySummaryAnalytics"
+      validation_query: "SELECT c.CUSTOMER_SEGMENT, COUNT(*) as VISITS FROM SKI_RESORT_DB.MARTS.FACT_PASS_USAGE p JOIN SKI_RESORT_DB.MARTS.DIM_CUSTOMER c ON p.CUSTOMER_KEY = c.CUSTOMER_KEY GROUP BY c.CUSTOMER_SEGMENT ORDER BY VISITS DESC"

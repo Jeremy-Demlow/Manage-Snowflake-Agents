@@ -1,0 +1,6 @@
+# LOCAL DEVELOPMENT ONLY
+# Production packages are specified in snowflake.yml
+
+# Development and testing
+pytest>=7.4.0
+pytest-mock>=3.11.1

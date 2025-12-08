@@ -1,0 +1,139 @@
+# ============================================================================
+# VISITOR FORECASTER - Feature Configuration
+# ============================================================================
+# Model-specific feature definitions for visitor count prediction
+#
+# SCALABLE PATTERNS:
+#   include: [group1, group2]     - Include entire feature groups from base.yaml
+#   exclude: [feature1, feature2] - Exclude specific features (from any included group)
+#   override:                     - Override properties of base features
+#     feature_name:
+#       dtype: float
+#   custom_features: [...]        - Add model-specific features not in base.yaml
+# ============================================================================
+
+model:
+  name: VISITOR_FORECASTER
+  description: Predict daily unique visitor counts for staffing decisions
+  target_column: UNIQUE_VISITORS
+  date_column: FULL_DATE
+
+# =============================================================================
+# FEATURE SELECTION
+# =============================================================================
+# Include base feature groups (from base.yaml)
+include:
+  - date_features      # day_of_week, month, is_weekend, is_holiday
+  - weather_features   # snowfall, temp, wind, powder_day, etc.
+  - day_dummies        # day_0 through day_6
+  - month_dummies      # month_1 through month_12
+  # - cyclical_features  # Alternative to dummies (uncomment to use sin/cos encoding)
+
+# Exclude specific features from included groups
+# Useful when you want most of a group but not all
+exclude: []
+  # Examples:
+  # - is_high_wind      # Exclude if this column isn't reliable
+  # - month_7           # Exclude summer months (no ski season)
+  # - month_8
+  # - month_9
+  # - month_10
+
+# Override base feature properties for this model
+# Useful when you need different dtype, default, or mapping
+override: {}
+  # Examples:
+  # snow_condition_encoded:
+  #   mapping:
+  #     powder: 5        # Different scoring for this model
+  #     packed_powder: 3
+  #     groomed: 2
+  #     icy: 1
+
+# =============================================================================
+# LAG & ROLLING FEATURES
+# =============================================================================
+lag_features:
+  source: UNIQUE_VISITORS  # Column to create lags from
+  lags: [7, 14, 21, 28]    # Days to look back
+  # exclude_lags: [21]     # Optional: exclude specific lags
+
+rolling_features:
+  source: UNIQUE_VISITORS
+  windows: [7, 14, 30]
+  aggregation: mean
+  # exclude_windows: []    # Optional: exclude specific windows
+
+# Training query - aggregates weather across zones, one row per date
+training_query: |
+  WITH daily_weather AS (
+      -- Aggregate weather across mountain zones to get one row per date
+      SELECT
+          DATE_KEY,
+          MAX(SNOW_CONDITION) as SNOW_CONDITION,  -- Best condition that day
+          SUM(SNOWFALL_INCHES) as SNOWFALL_INCHES,  -- Total snowfall
+          AVG(BASE_DEPTH_INCHES) as BASE_DEPTH_INCHES,
+          AVG(AVG_TEMP_F) as AVG_TEMP_F,
+          MAX(WIND_SPEED_MPH) as WIND_SPEED_MPH,  -- Worst wind
+          MAX(CASE WHEN IS_POWDER_DAY THEN 1 ELSE 0 END) as IS_POWDER_DAY,
+          MAX(CASE WHEN IS_HIGH_WIND THEN 1 ELSE 0 END) as IS_HIGH_WIND
+      FROM {database}.{schema}.FACT_WEATHER
+      GROUP BY DATE_KEY
+  ),
+  daily_visitors AS (
+      -- One row per date with visitor count
+      SELECT
+          DATE_KEY,
+          COUNT(DISTINCT CUSTOMER_KEY) as UNIQUE_VISITORS
+      FROM {database}.{schema}.FACT_PASS_USAGE
+      GROUP BY DATE_KEY
+  )
+  SELECT
+      d.FULL_DATE,
+      d.DAY_OF_WEEK,
+      d.MONTH_NUM as MONTH,
+      d.IS_WEEKEND,
+      d.IS_HOLIDAY,
+      -- Weather (aggregated to daily)
+      w.SNOW_CONDITION,
+      w.SNOWFALL_INCHES,
+      w.BASE_DEPTH_INCHES,
+      w.AVG_TEMP_F,
+      w.WIND_SPEED_MPH,
+      w.IS_POWDER_DAY,
+      w.IS_HIGH_WIND,
+      -- Target
+      v.UNIQUE_VISITORS
+  FROM {database}.{schema}.DIM_DATE d
+  INNER JOIN daily_visitors v ON v.DATE_KEY = d.DATE_KEY
+  INNER JOIN daily_weather w ON w.DATE_KEY = d.DATE_KEY
+  WHERE d.FULL_DATE >= DATEADD('year', -{years_back}, CURRENT_DATE())
+    AND d.FULL_DATE < CURRENT_DATE()
+    AND v.UNIQUE_VISITORS > 0
+  ORDER BY d.FULL_DATE
+
+# Hyperparameters (XGBoost)
+hyperparams:
+  n_estimators: 500
+  max_depth: 6
+  learning_rate: 0.05
+  reg_alpha: 0.1
+  reg_lambda: 1.0
+  min_child_weight: 5
+  subsample: 0.8
+  colsample_bytree: 0.8
+  early_stopping_rounds: 15
+  tree_method: hist
+  random_state: 42
+  objective: reg:squarederror
+
+# Quality gates for registration
+quality_gates:
+  min_r2: 0.70
+  max_mae: 200
+  max_mape: 25.0
+
+# Drift detection
+drift_thresholds:
+  warning_mape: 15.0
+  critical_mape: 25.0

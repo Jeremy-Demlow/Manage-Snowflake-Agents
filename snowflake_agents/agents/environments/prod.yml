@@ -1,0 +1,48 @@
+# =============================================================================
+# PRODUCTION ENVIRONMENT CONFIGURATION
+# =============================================================================
+# Purpose: Production deployment for end users
+# Pattern: Agents live in data database, then get added to Snowflake Intelligence
+# =============================================================================
+
+environment: prod
+
+# Snowflake connection
+snowflake:
+  connection_name: snowflake_agents
+
+# Agent deployment location (agents live WITH your data)
+agent_deployment:
+  database: SKI_RESORT_DB
+  schema: AGENTS
+
+  # Add to Snowflake Intelligence for UI visibility (prod agents are visible)
+  add_to_snowflake_intelligence: true
+
+# Data sources
+data_sources:
+  database: SKI_RESORT_DB
+  semantic_schema: SEMANTIC
+
+# Compute
+warehouse: COMPUTE_WH
+
+# Orchestration model
+# Options: auto, claude-haiku-4-5, claude-sonnet-4-5, claude-sonnet-4,
+#          claude-sonnet-3-7, claude-sonnet-3-5, gpt-5, gpt-4-1
+model:
+  orchestration: claude-sonnet-4-5
+
+# Production-specific settings
+settings:
+  log_level: WARNING
+  enable_testing: false
+  version_suffix: ""  # No suffix in prod (clean names)
+  strict_validation: true
+
+# Production deployment requirements
+deployment_requirements:
+  require_staging_promotion: true
+  require_approval: true
+  backup_before_deploy: true
+  rollback_enabled: true

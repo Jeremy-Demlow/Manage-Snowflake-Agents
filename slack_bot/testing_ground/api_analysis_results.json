@@ -1,0 +1,174 @@
+{
+  "timestamp": "2025-10-03T17:28:09.873377",
+  "tests": [
+    {
+      "agent": "ACME_CONTRACTS_AGENT",
+      "question": "What's our total revenue this quarter?",
+      "status_code": 401,
+      "headers": {
+        "Date": "Sat, 04 Oct 2025 00:28:14 GMT",
+        "Www-Authenticate": "Bearer resource_metadata=https://trb65519.snowflakecomputing.com/.well-known/oauth-protected-resource/api/v2/databases/%22SNOWFLAKE_INTELLIGENCE%22/schemas/%22PUBLIC%22/agents/ACME_CONTRACTS_AGENT:run",
+        "X-Snowflake-Request-Id": "61509834-b23c-40fb-8379-33add44ececb",
+        "Content-Type": "application/json",
+        "Content-Length": "0",
+        "Server": "SF-LB",
+        "X-Envoy-Upstream-Service-Time": "2",
+        "X-Content-Type-Options": "nosniff",
+        "X-Xss-Protection": "1; mode=block",
+        "Expect-Ct": "enforce, max-age=3600",
+        "Strict-Transport-Security": "max-age=31536000",
+        "X-Snowflake-Fe-Instance": "-",
+        "X-Snowflake-Fe-Config": "v20251001.0.0-28cad589.1759339601.prod3.1759537626203",
+        "X-Frame-Options": "deny",
+        "X-Envoy-Attempt-Count": "1"
+      },
+      "url": "https://trb65519.snowflakecomputing.com/api/v2/databases/\"SNOWFLAKE_INTELLIGENCE\"/schemas/\"PUBLIC\"/agents/ACME_CONTRACTS_AGENT:run",
+      "error": "",
+      "category": "business_intelligence",
+      "auth_method": "basic_auth",
+      "timestamp": "2025-10-03T17:28:14.531608"
+    },
+    {
+      "agent": "ACME_CONTRACTS_AGENT",
+      "question": "How many jobs were completed last month?",
+      "status_code": 401,
+      "headers": {
+        "Date": "Sat, 04 Oct 2025 00:28:15 GMT",
+        "Www-Authenticate": "Bearer resource_metadata=https://trb65519.snowflakecomputing.com/.well-known/oauth-protected-resource/api/v2/databases/%22SNOWFLAKE_INTELLIGENCE%22/schemas/%22PUBLIC%22/agents/ACME_CONTRACTS_AGENT:run",
+        "X-Snowflake-Request-Id": "a86a11b0-dada-4128-ba73-1c6d36e0c441",
+        "Content-Type": "application/json",
+        "Content-Length": "0",
+        "Server": "SF-LB",
+        "X-Envoy-Upstream-Service-Time": "2",
+        "X-Content-Type-Options": "nosniff",
+        "X-Xss-Protection": "1; mode=block",
+        "Expect-Ct": "enforce, max-age=3600",
+        "Strict-Transport-Security": "max-age=31536000",
+        "X-Snowflake-Fe-Instance": "-",
+        "X-Snowflake-Fe-Config": "v20251001.0.0-28cad589.1759339601.prod3.1759537626203",
+        "X-Frame-Options": "deny",
+        "X-Envoy-Attempt-Count": "1"
+      },
+      "url": "https://trb65519.snowflakecomputing.com/api/v2/databases/\"SNOWFLAKE_INTELLIGENCE\"/schemas/\"PUBLIC\"/agents/ACME_CONTRACTS_AGENT:run",
+      "error": "",
+      "category": "business_intelligence",
+      "auth_method": "basic_auth",
+      "timestamp": "2025-10-03T17:28:15.708943"
+    },
+    {
+      "agent": "ACME_CONTRACTS_AGENT",
+      "question": "Which contracts are at risk of churn?",
+      "status_code": 401,
+      "headers": {
+        "Date": "Sat, 04 Oct 2025 00:28:16 GMT",
+        "Www-Authenticate": "Bearer resource_metadata=https://trb65519.snowflakecomputing.com/.well-known/oauth-protected-resource/api/v2/databases/%22SNOWFLAKE_INTELLIGENCE%22/schemas/%22PUBLIC%22/agents/ACME_CONTRACTS_AGENT:run",
+        "X-Snowflake-Request-Id": "f35fe978-8eb7-459d-bd51-29f51f6677d0",
+        "Content-Type": "application/json",
+        "Content-Length": "0",
+        "Server": "SF-LB",
+        "X-Envoy-Upstream-Service-Time": "3",
+        "X-Content-Type-Options": "nosniff",
+        "X-Xss-Protection": "1; mode=block",
+        "Expect-Ct": "enforce, max-age=3600",
+        "Strict-Transport-Security": "max-age=31536000",
+        "X-Snowflake-Fe-Instance": "-",
+        "X-Snowflake-Fe-Config": "v20251001.0.0-28cad589.1759339601.prod3.1759537626203",
+        "X-Frame-Options": "deny",
+        "X-Envoy-Attempt-Count": "1"
+      },
+      "url": "https://trb65519.snowflakecomputing.com/api/v2/databases/\"SNOWFLAKE_INTELLIGENCE\"/schemas/\"PUBLIC\"/agents/ACME_CONTRACTS_AGENT:run",
+      "error": "",
+      "category": "contracts",
+      "auth_method": "basic_auth",
+      "timestamp": "2025-10-03T17:28:16.802943"
+    },
+    {
+      "agent": "ACME_CONTRACTS_AGENT",
+      "question": "What's our contract renewal rate?",
+      "status_code": 401,
+      "headers": {
+        "Date": "Sat, 04 Oct 2025 00:28:17 GMT",
+        "Www-Authenticate": "Bearer resource_metadata=https://trb65519.snowflakecomputing.com/.well-known/oauth-protected-resource/api/v2/databases/%22SNOWFLAKE_INTELLIGENCE%22/schemas/%22PUBLIC%22/agents/ACME_CONTRACTS_AGENT:run",
+        "X-Snowflake-Request-Id": "88d9759f-b9b0-4f3b-80e6-9ad082f2c558",
+        "Content-Type": "application/json",
+        "Content-Length": "0",
+        "Server": "SF-LB",
+        "X-Envoy-Upstream-Service-Time": "2",
+        "X-Content-Type-Options": "nosniff",
+        "X-Xss-Protection": "1; mode=block",
+        "Expect-Ct": "enforce, max-age=3600",
+        "Strict-Transport-Security": "max-age=31536000",
+        "X-Snowflake-Fe-Instance": "-",
+        "X-Snowflake-Fe-Config": "v20251001.0.0-28cad589.1759339601.prod3.1759537626203",
+        "X-Frame-Options": "deny",
+        "X-Envoy-Attempt-Count": "1"
+      },
+      "url": "https://trb65519.snowflakecomputing.com/api/v2/databases/\"SNOWFLAKE_INTELLIGENCE\"/schemas/\"PUBLIC\"/agents/ACME_CONTRACTS_AGENT:run",
+      "error": "",
+      "category": "contracts",
+      "auth_method": "basic_auth",
+      "timestamp": "2025-10-03T17:28:17.996348"
+    },
+    {
+      "agent": "ACME_CONTRACTS_AGENT",
+      "question": "What are the slowest queries today?",
+      "error": "HTTPSConnectionPool(host='trb65519.snowflakecomputing.com', port=443): Read timed out. (read timeout=10)",
+      "error_type": "ReadTimeout",
+      "category": "performance",
+      "auth_method": "basic_auth",
+      "timestamp": "2025-10-03T17:28:29.021688"
+    },
+    {
+      "agent": "ACME_CONTRACTS_AGENT",
+      "question": "Show me warehouse usage patterns",
+      "error": "HTTPSConnectionPool(host='trb65519.snowflakecomputing.com', port=443): Max retries exceeded with url: /api/v2/databases/%22SNOWFLAKE_INTELLIGENCE%22/schemas/%22PUBLIC%22/agents/ACME_CONTRACTS_AGENT:run (Caused by NameResolutionError(\"<urllib3.connection.HTTPSConnection object at 0x125cf9090>: Failed to resolve 'trb65519.snowflakecomputing.com' ([Errno 8] nodename nor servname provided, or not known)\"))",
+      "error_type": "ConnectionError",
+      "category": "performance",
+      "auth_method": "basic_auth",
+      "timestamp": "2025-10-03T17:44:18.506736"
+    },
+    {
+      "agent": "ACME_CONTRACTS_AGENT",
+      "question": "What's in our safety policy?",
+      "error": "HTTPSConnectionPool(host='trb65519.snowflakecomputing.com', port=443): Max retries exceeded with url: /api/v2/databases/%22SNOWFLAKE_INTELLIGENCE%22/schemas/%22PUBLIC%22/agents/ACME_CONTRACTS_AGENT:run (Caused by NameResolutionError(\"<urllib3.connection.HTTPSConnection object at 0x125cf9110>: Failed to resolve 'trb65519.snowflakecomputing.com' ([Errno 8] nodename nor servname provided, or not known)\"))",
+      "error_type": "ConnectionError",
+      "category": "documents",
+      "auth_method": "basic_auth",
+      "timestamp": "2025-10-03T17:44:19.525539"
+    },
+    {
+      "agent": "ACME_CONTRACTS_AGENT",
+      "question": "Show me information about HVAC installation",
+      "error": "HTTPSConnectionPool(host='trb65519.snowflakecomputing.com', port=443): Max retries exceeded with url: /api/v2/databases/%22SNOWFLAKE_INTELLIGENCE%22/schemas/%22PUBLIC%22/agents/ACME_CONTRACTS_AGENT:run (Caused by NameResolutionError(\"<urllib3.connection.HTTPSConnection object at 0x125ca2d50>: Failed to resolve 'trb65519.snowflakecomputing.com' ([Errno 8] nodename nor servname provided, or not known)\"))",
+      "error_type": "ConnectionError",
+      "category": "documents",
+      "auth_method": "basic_auth",
+      "timestamp": "2025-10-03T18:00:16.017024"
+    },
+    {
+      "agent": "ACME_CONTRACTS_AGENT",
+      "question": "Hello, are you working?",
+      "error": "HTTPSConnectionPool(host='trb65519.snowflakecomputing.com', port=443): Max retries exceeded with url: /api/v2/databases/%22SNOWFLAKE_INTELLIGENCE%22/schemas/%22PUBLIC%22/agents/ACME_CONTRACTS_AGENT:run (Caused by NameResolutionError(\"<urllib3.connection.HTTPSConnection object at 0x125f5d210>: Failed to resolve 'trb65519.snowflakecomputing.com' ([Errno 8] nodename nor servname provided, or not known)\"))",
+      "error_type": "ConnectionError",
+      "category": "simple_test",
+      "auth_method": "basic_auth",
+      "timestamp": "2025-10-03T18:00:17.035157"
+    },
+    {
+      "agent": "ACME_CONTRACTS_AGENT",
+      "question": "What can you help me with?",
+      "error": "HTTPSConnectionPool(host='trb65519.snowflakecomputing.com', port=443): Max retries exceeded with url: /api/v2/databases/%22SNOWFLAKE_INTELLIGENCE%22/schemas/%22PUBLIC%22/agents/ACME_CONTRACTS_AGENT:run (Caused by NameResolutionError(\"<urllib3.connection.HTTPSConnection object at 0x125f5de10>: Failed to resolve 'trb65519.snowflakecomputing.com' ([Errno 8] nodename nor servname provided, or not known)\"))",
+      "error_type": "ConnectionError",
+      "category": "simple_test",
+      "auth_method": "basic_auth",
+      "timestamp": "2025-10-03T18:00:18.048461"
+    }
+  ],
+  "errors": [],
+  "learnings": [
+    "Tested 10 API calls",
+    "Successful: 0",
+    "Failed: 10",
+    "\u274c Most common error: HTTP 401"
+  ]
+}

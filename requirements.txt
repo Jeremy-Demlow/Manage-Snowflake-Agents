@@ -1,0 +1,29 @@
+# Local development dependencies
+# Note: For deployment to Snowflake, use environment.yml
+
+# Snowflake
+snowflake-connector-python
+snowflake-snowpark-python
+snowflake-ml-python
+snowflake-cli-labs
+
+# DBT for Snowflake
+dbt-core>=1.7.0
+dbt-snowflake>=1.7.0
+
+# Python Helpers
+fastcore
+
+# Data Generation
+faker>=20.0.0
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Development Tools
+jupyter
+nbdev
+
+# Connection Management Dependencies
+pydantic
+toml
+cryptography

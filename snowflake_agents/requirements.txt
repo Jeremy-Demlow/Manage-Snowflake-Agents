@@ -1,0 +1,17 @@
+# Snowflake Agent Deployment Requirements
+# Install in snowflake_agents conda environment
+
+# Core Snowflake
+snowflake-connector-python>=3.6.0
+snowflake-snowpark-python>=1.15.0
+
+# Agent deployment
+pyyaml>=6.0
+
+# TruLens for AI Observability (version 2.1.2+)
+trulens-core>=2.1.2
+trulens-connectors-snowflake>=2.1.2
+trulens-providers-cortex>=2.1.2
+
+# Utilities
+pandas>=2.0.0

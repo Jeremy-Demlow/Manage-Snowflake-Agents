@@ -1,0 +1,161 @@
+# Daily Data Refresh Pipeline
+# ============================
+# Runs at 5am PST (1pm UTC) daily to:
+# 1. Generate incremental ski resort data
+# 2. Run DBT fact tables
+# 3. Refresh semantic views
+#
+# Uses official Snowflake CLI GitHub Action:
+# https://github.com/snowflakedb/snowflake-cli-action
+
+name: Daily Data Refresh
+
+on:
+  schedule:
+    # 5am PST = 1pm UTC (13:00)
+    - cron: '0 13 * * *'
+
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'Number of days to generate'
+        required: false
+        default: '1'
+      full_refresh:
+        description: 'Force full DBT refresh'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  data-refresh:
+    name: Generate Data & Run DBT
+    runs-on: ubuntu-latest
+
+    # Snowflake credentials (same pattern as deploy.yml)
+    env:
+      SNOWFLAKE_CONNECTIONS_DEFAULT_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+      SNOWFLAKE_CONNECTIONS_DEFAULT_USER: ${{ secrets.SNOWFLAKE_USER }}
+      SNOWFLAKE_CONNECTIONS_DEFAULT_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+      SNOWFLAKE_CONNECTIONS_DEFAULT_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+      SNOWFLAKE_CONNECTIONS_DEFAULT_DATABASE: SKI_RESORT_DB
+      SNOWFLAKE_CONNECTIONS_DEFAULT_SCHEMA: RAW
+      SNOWFLAKE_CONNECTIONS_DEFAULT_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # ─── Snowflake CLI Setup (Official Action) ───────────────────────────
+      - name: 🔧 Setup Snowflake CLI
+        uses: snowflakedb/snowflake-cli-action@v1.5
+        with:
+          cli-version: "latest"
+          default-config-file-path: "config.toml"
+
+      - name: ✅ Test Snowflake Connection
+        run: |
+          echo "Testing Snowflake connection..."
+          snow --version
+          snow connection test
+          echo "✅ Connection successful!"
+
+      # ─── Python Setup ────────────────────────────────────────────────────
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 📦 Install Python Dependencies
+        run: |
+          pip install --upgrade pip
+          pip install "snowflake-snowpark-python[pandas]" pandas pyarrow numpy pyyaml toml pydantic cryptography
+
+      # ─── Generate Incremental Data ───────────────────────────────────────
+      - name: 📊 Generate Incremental Data
+        working-directory: data_generation
+        env:
+          # Also set standard env vars for Python scripts
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_DATABASE: SKI_RESORT_DB
+          SNOWFLAKE_SCHEMA: RAW
+        run: |
+          echo "🎿 Generating ski resort data for $(date +%Y-%m-%d)..."
+          DAYS="${{ github.event.inputs.days || '1' }}"
+          python generate_daily_increment.py \
+            --date $(date +%Y-%m-%d) \
+            --days $DAYS \
+            --connection default
+
+      # ─── DBT Setup & Run ─────────────────────────────────────────────────
+      - name: 📦 Install DBT
+        run: pip install dbt-snowflake
+
+      - name: 🔧 Configure DBT Profile
+        run: |
+          echo "Using project profiles.yml with env vars"
+          # The dbt_ski_resort/profiles.yml uses {{ env_var('SNOWFLAKE_PASSWORD') }}
+
+      - name: 📦 Install DBT Dependencies
+        working-directory: dbt_ski_resort
+        env:
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+        run: |
+          echo "📦 Installing DBT dependencies..."
+          dbt deps
+
+      - name: 🏗️ Run DBT Fact Tables
+        working-directory: dbt_ski_resort
+        env:
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+        run: |
+          echo "📈 Running DBT fact models..."
+          if [ "${{ github.event.inputs.full_refresh }}" = "true" ]; then
+            echo "Full refresh requested"
+            dbt run --select "marts.facts" --full-refresh
+          else
+            dbt run --select "marts.facts"
+          fi
+
+      - name: 🎯 Run DBT Semantic Views
+        working-directory: dbt_ski_resort
+        env:
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+        run: |
+          echo "🔄 Refreshing semantic views..."
+          dbt run --select "marts.semantic"
+
+      # ─── Verification ────────────────────────────────────────────────────
+      - name: ✅ Verify Data Load
+        run: |
+          echo "📋 Verifying data refresh..."
+          snow sql -q "
+            SELECT VISIT_DATE, COUNT(*) as visitors
+            FROM SKI_RESORT_DB.RAW.PASS_USAGE
+            WHERE VISIT_DATE >= DATEADD(day, -7, CURRENT_DATE())
+            GROUP BY VISIT_DATE
+            ORDER BY VISIT_DATE DESC
+            LIMIT 7
+          "
+
+      # ─── Summary ─────────────────────────────────────────────────────────
+      - name: 📝 Job Summary
+        run: |
+          echo "## 🎿 Daily Data Refresh Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Date:** $(date '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Steps Completed:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Snowflake CLI configured (official action)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Generated incremental data" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Ran DBT fact tables" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Refreshed semantic views" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Verified data load" >> $GITHUB_STEP_SUMMARY

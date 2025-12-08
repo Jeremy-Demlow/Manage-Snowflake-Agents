@@ -1,0 +1,15 @@
+spec:
+  containers:
+    - name: alert-processor
+      image: /SKI_RESORT_DB/AGENTS/ALERTS_REPO/alert-job:latest
+      env:
+        DATABASE: SKI_RESORT_DB
+        SCHEMA: AGENTS
+        AGENT_NAME: RESORT_EXECUTIVE_DEV
+      resources:
+        requests:
+          cpu: "1"
+          memory: "2Gi"
+        limits:
+          cpu: "2"
+          memory: "4Gi"

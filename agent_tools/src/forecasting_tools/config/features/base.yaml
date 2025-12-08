@@ -1,0 +1,211 @@
+# ============================================================================
+# BASE FEATURE DEFINITIONS
+# ============================================================================
+# Shared feature groups that models can include via their config
+# Usage in model config: include: [date_features, weather_features, ...]
+# ============================================================================
+
+# -----------------------------------------------------------------------------
+# DATE FEATURES - Calendar attributes
+# -----------------------------------------------------------------------------
+date_features:
+  - name: day_of_week
+    type: date_extract
+    extract: dayofweek
+    dtype: int
+
+  - name: month
+    type: date_extract
+    extract: month
+    dtype: int
+
+  - name: is_weekend
+    type: column
+    source: IS_WEEKEND
+    dtype: int
+
+  - name: is_holiday
+    type: column
+    source: IS_HOLIDAY
+    dtype: int
+
+# -----------------------------------------------------------------------------
+# WEATHER FEATURES - Conditions that impact visitation
+# -----------------------------------------------------------------------------
+weather_features:
+  - name: snowfall_inches
+    type: column
+    source: SNOWFALL_INCHES
+    dtype: float
+    default: 0
+
+  - name: base_depth_inches
+    type: column
+    source: BASE_DEPTH_INCHES
+    dtype: float
+    default: 60
+
+  - name: avg_temp_f
+    type: column
+    source: AVG_TEMP_F
+    dtype: float
+    default: 28
+
+  - name: wind_speed_mph
+    type: column
+    source: WIND_SPEED_MPH
+    dtype: float
+    default: 10
+
+  - name: is_powder_day
+    type: column
+    source: IS_POWDER_DAY
+    dtype: int
+    default: 0
+
+  - name: is_high_wind
+    type: column
+    source: IS_HIGH_WIND
+    dtype: int
+    default: 0
+
+  - name: snow_condition_encoded
+    type: categorical
+    source: SNOW_CONDITION
+    mapping:
+      powder: 3
+      packed_powder: 2
+      groomed: 1
+      icy: 0
+    default: 1
+
+# -----------------------------------------------------------------------------
+# DAY DUMMIES - One-hot encoding for day of week
+# -----------------------------------------------------------------------------
+day_dummies:
+  - name: day_0
+    type: one_hot
+    source: day_of_week
+    value: 0
+
+  - name: day_1
+    type: one_hot
+    source: day_of_week
+    value: 1
+
+  - name: day_2
+    type: one_hot
+    source: day_of_week
+    value: 2
+
+  - name: day_3
+    type: one_hot
+    source: day_of_week
+    value: 3
+
+  - name: day_4
+    type: one_hot
+    source: day_of_week
+    value: 4
+
+  - name: day_5
+    type: one_hot
+    source: day_of_week
+    value: 5
+
+  - name: day_6
+    type: one_hot
+    source: day_of_week
+    value: 6
+
+# -----------------------------------------------------------------------------
+# MONTH DUMMIES - One-hot encoding for month (ski season months matter most)
+# -----------------------------------------------------------------------------
+month_dummies:
+  - name: month_1
+    type: one_hot
+    source: month
+    value: 1
+
+  - name: month_2
+    type: one_hot
+    source: month
+    value: 2
+
+  - name: month_3
+    type: one_hot
+    source: month
+    value: 3
+
+  - name: month_4
+    type: one_hot
+    source: month
+    value: 4
+
+  - name: month_5
+    type: one_hot
+    source: month
+    value: 5
+
+  - name: month_6
+    type: one_hot
+    source: month
+    value: 6
+
+  - name: month_7
+    type: one_hot
+    source: month
+    value: 7
+
+  - name: month_8
+    type: one_hot
+    source: month
+    value: 8
+
+  - name: month_9
+    type: one_hot
+    source: month
+    value: 9
+
+  - name: month_10
+    type: one_hot
+    source: month
+    value: 10
+
+  - name: month_11
+    type: one_hot
+    source: month
+    value: 11
+
+  - name: month_12
+    type: one_hot
+    source: month
+    value: 12
+
+# -----------------------------------------------------------------------------
+# CYCLICAL FEATURES - Alternative to dummies (sin/cos encoding)
+# -----------------------------------------------------------------------------
+cyclical_features:
+  - name: day_sin
+    type: cyclical
+    source: day_of_week
+    period: 7
+    function: sin
+
+  - name: day_cos
+    type: cyclical
+    source: day_of_week
+    period: 7
+    function: cos
+
+  - name: month_sin
+    type: cyclical
+    source: month
+    period: 12
+    function: sin
+
+  - name: month_cos
+    type: cyclical
+    source: month
+    period: 12
+    function: cos

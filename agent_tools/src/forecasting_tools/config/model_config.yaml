@@ -1,0 +1,74 @@
+# ============================================================================
+# MODEL CONFIGURATION - Single Source of Truth
+# ============================================================================
+# All model settings, thresholds, and staffing recommendations
+# ============================================================================
+
+# Model Registry Settings
+registry:
+  database: SKI_RESORT_DB
+  schema: MODELS
+
+# Experiment Tracking
+experiments:
+  database: SKI_RESORT_DB
+  schema: MARTS
+
+# Prediction Logging
+prediction_log:
+  table: ML_PREDICTION_LOG
+  database: SKI_RESORT_DB
+  schema: MARTS
+
+# =============================================================================
+# STAFFING LEVELS - Used by all forecasting scripts
+# =============================================================================
+# Thresholds for staffing recommendations based on predicted visitors
+# Scripts should use get_staffing_level() from this config
+staffing_levels:
+  minimal:
+    max_visitors: 500
+    lift_operators: "6-8"
+    f_and_b: "1 location"
+    description: "Very light day"
+  light:
+    max_visitors: 1000
+    lift_operators: "10-12"
+    f_and_b: "2 locations"
+    description: "Below average weekday"
+  moderate:
+    max_visitors: 2000
+    lift_operators: "14-16"
+    f_and_b: "3 locations"
+    description: "Average weekday or light weekend"
+  high:
+    max_visitors: 3000
+    lift_operators: "18-20"
+    f_and_b: "All locations"
+    description: "Busy weekend or holiday"
+  maximum:
+    max_visitors: 999999
+    lift_operators: "22+"
+    f_and_b: "All + overflow"
+    description: "Peak holiday or powder day"
+
+# =============================================================================
+# AVAILABLE MODELS
+# =============================================================================
+# Each model has its own feature config in config/features/<name>.yaml
+models:
+  visitor_forecast:
+    name: VISITOR_FORECASTER
+    description: Predict daily unique visitor counts for staffing decisions
+    status: active
+
+  # Future models (configs not yet created)
+  # wait_time:
+  #   name: WAIT_TIME_FORECASTER
+  #   description: Predict lift wait times
+  #   status: planned
+  #
+  # staffing:
+  #   name: STAFFING_OPTIMIZER
+  #   description: Optimize staffing levels
+  #   status: planned

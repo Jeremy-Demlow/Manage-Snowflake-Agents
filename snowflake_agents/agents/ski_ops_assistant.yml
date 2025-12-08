@@ -1,0 +1,546 @@
+# =============================================================================
+# SKI OPERATIONS ASSISTANT
+# =============================================================================
+# Version: 2.0.0
+# Last Updated: 2025-11-25
+# Owner: Mountain Operations Team
+# Purpose: Daily lift operations, staffing optimization, and weather impact analysis
+# =============================================================================
+
+metadata:
+  name: ski_ops_assistant
+  version: "2.0.0"
+  created: "2025-11-25"
+  updated: "2025-11-25"
+  owner: operations_team
+  status: active  # active | deprecated | testing
+
+# -----------------------------------------------------------------------------
+# AGENT PROFILE
+# -----------------------------------------------------------------------------
+profile:
+  display_name: "Ski Operations Assistant"
+  color: "blue"
+  avatar: "mountain"  # Optional avatar identifier
+
+# Agent description shown in Snowflake Intelligence UI
+description: |
+  AI-powered assistant for ski resort operations teams. Analyzes lift performance,
+  wait times, staffing coverage, and weather conditions to optimize daily operations
+  and customer experience. Covers 18 lifts, 8 mountain zones, and 4 seasons of
+  historical data.
+
+# Example questions shown to users (independent, high-value questions)
+sample_questions:
+  - "What are the average wait times by lift on weekends?"
+  - "Which lifts had the longest waits during the 2023-2024 season?"
+  - "How does weather affect lift operations?"
+  - "Show me staffing coverage by department last month"
+  - "What's the correlation between powder days and attendance?"
+  - "Which departments were understaffed most frequently?"
+  - "How many visitors should we expect next weekend?"
+  - "What's the forecast for the Christmas holiday period?"
+  - "How should we staff for the upcoming week?"
+  - "What are the most common incident types this season?"
+  - "How has ski patrol response time trended?"
+  - "Which trails have the most safety incidents?"
+
+# -----------------------------------------------------------------------------
+# TOOLS (3 semantic views - focused on operations)
+# -----------------------------------------------------------------------------
+tools:
+
+  # ---------------------------------------------------------------------------
+  # TOOL 1: Lift Operations Analytics
+  # ---------------------------------------------------------------------------
+  - name: LiftOperationsAnalytics
+    type: cortex_analyst_text_to_sql
+
+    semantic_view:
+      database: SKI_RESORT_DB
+      schema: SEMANTIC
+      name: SEM_OPERATIONS
+
+    description: |
+      Analyzes lift scan data, wait times, capacity utilization, and operational
+      metrics across all 18 lifts. Includes customer segment mix and weather context.
+
+      DATA COVERAGE:
+      - Historical: 4 ski seasons (Nov 2020 - Apr 2024)
+      - Granularity: Individual lift scans aggregated to hourly/daily
+      - Lifts: 18 lifts (2 gondolas, 16 chairlifts) across 4 terrain types
+      - Volume: 3.5M+ lift scans
+      - Refresh: Updated nightly at 2 AM MST
+
+      KEY METRICS AVAILABLE:
+      - TOTAL_SCANS: Total lift scans recorded
+      - UNIQUE_RIDERS: Distinct customers using lifts
+      - AVG_WAIT_MINUTES: Average wait time at lift
+      - MAX_WAIT_MINUTES: Maximum wait time observed
+      - P95_WAIT_MINUTES: 95th percentile wait time
+      - CAPACITY_UTILIZATION_PCT: Actual vs theoretical capacity
+      - PASS_HOLDER_SHARE_PCT: Percentage of riders who are pass holders
+
+      KEY DIMENSIONS:
+      - FULL_DATE, DAY_NAME, SKI_SEASON, IS_WEEKEND, IS_HOLIDAY
+      - LIFT_NAME, LIFT_TYPE, TERRAIN_TYPE, DIFFICULTY_ACCESS
+      - CUSTOMER_SEGMENT (local_pass_holder, weekend_warrior, vacation_family, etc.)
+      - SNOW_CONDITION (Excellent, Good, Fair, Poor)
+      - SCAN_HOUR (0-23 for time-of-day analysis)
+
+      WHEN TO USE:
+      - Questions about lift wait times, bottlenecks, or queues
+      - Questions about lift capacity and utilization
+      - Questions about which lifts are busiest or slowest
+      - Hourly patterns and time-of-day analysis
+      - Weekend vs weekday operational comparisons
+      - Customer segment mix at different lifts
+      - Weather impact on lift operations
+
+      WHEN NOT TO USE:
+      - Do NOT use for staffing schedules or labor data (use StaffingAnalytics)
+      - Do NOT use for weather forecasts (historical weather only)
+      - Do NOT use for revenue or financial metrics (use ResortExecutive agent)
+      - Do NOT use for customer demographics or retention (use CustomerInsights agent)
+      - Do NOT use for real-time current conditions (data is nightly batch)
+
+      QUERY BEST PRACTICES:
+      - For wait time analysis: GROUP BY LIFT_NAME, use AVG_WAIT_MINUTES
+      - For seasonal trends: GROUP BY SKI_SEASON or MONTH_NAME
+      - For weekend analysis: Filter IS_WEEKEND = true
+      - For peak hours: Filter SCAN_HOUR BETWEEN 9 AND 11 (morning rush)
+      - For terrain analysis: GROUP BY TERRAIN_TYPE or DIFFICULTY_ACCESS
+
+      EXAMPLE QUERIES:
+      - "What is the average wait time by lift for the 2023-2024 season?"
+      - "Show me hourly wait time patterns for Summit Gondola on weekends"
+      - "Which terrain type has the highest capacity utilization?"
+      - "Compare lift scans between pass holders and day visitors by lift"
+
+  # ---------------------------------------------------------------------------
+  # TOOL 2: Staffing Analytics
+  # ---------------------------------------------------------------------------
+  - name: StaffingAnalytics
+    type: cortex_analyst_text_to_sql
+
+    semantic_view:
+      database: SKI_RESORT_DB
+      schema: SEMANTIC
+      name: SEM_STAFFING_ANALYTICS
+
+    description: |
+      Analyzes staffing schedules, coverage ratios, and labor efficiency across
+      resort departments including Lift Operations, Food & Beverage, Rentals,
+      Guest Services, and Ski Patrol.
+
+      DATA COVERAGE:
+      - Historical: 2 ski seasons (Nov 2023 - Apr 2025)
+      - Granularity: Shift-level (daily schedules by department and role)
+      - Departments: Lift Operations, Food & Beverage, Rentals, Guest Services, Ski Patrol
+      - Records: ~1,750 shift records
+      - Refresh: Updated nightly at 2 AM MST
+
+      KEY METRICS AVAILABLE:
+      - TOTAL_SCHEDULED: Number of employees scheduled
+      - TOTAL_ACTUAL: Employees who actually worked
+      - AVG_COVERAGE: Coverage ratio (actual/scheduled, 1.0 = fully staffed)
+      - UNDERSTAFFED_COUNT: Shifts with coverage < 90%
+      - TOTAL_SCHEDULED_HOURS: Scheduled labor hours
+      - TOTAL_ACTUAL_HOURS: Actual labor hours worked
+      - SHIFT_COUNT: Number of shifts
+
+      KEY DIMENSIONS:
+      - FULL_DATE, DAY_NAME, SKI_SEASON, IS_WEEKEND, IS_HOLIDAY
+      - DEPARTMENT (Lift Operations, Food & Beverage, Rentals, etc.)
+      - JOB_ROLE (specific position within department)
+      - LOCATION_NAME (physical facility)
+
+      WHEN TO USE:
+      - Questions about staffing levels or headcount
+      - Questions about coverage ratios or understaffing
+      - Labor hours analysis by department
+      - Identifying staffing gaps or patterns
+      - Weekend vs weekday staffing comparisons
+      - Department-level workforce analysis
+
+      WHEN NOT TO USE:
+      - Do NOT use for individual employee HR data (not available)
+      - Do NOT use for payroll or compensation (not available)
+      - Do NOT use for lift operations metrics (use LiftOperationsAnalytics)
+      - Do NOT use for customer-facing metrics (use other tools)
+
+      QUERY BEST PRACTICES:
+      - For coverage analysis: Use AVG_COVERAGE metric
+      - For understaffing: Filter or use UNDERSTAFFED_COUNT
+      - For department comparison: GROUP BY DEPARTMENT
+      - For weekend patterns: Filter IS_WEEKEND = true
+
+      EXAMPLE QUERIES:
+      - "What is the average coverage ratio by department?"
+      - "Which departments have the most understaffed shifts?"
+      - "Show me total labor hours by department for December 2024"
+      - "Compare weekend vs weekday staffing levels for Lift Operations"
+
+  # ---------------------------------------------------------------------------
+  # TOOL 3: Weather Analytics
+  # ---------------------------------------------------------------------------
+  - name: WeatherAnalytics
+    type: cortex_analyst_text_to_sql
+
+    semantic_view:
+      database: SKI_RESORT_DB
+      schema: SEMANTIC
+      name: SEM_WEATHER_ANALYTICS
+
+    description: |
+      Analyzes historical weather conditions by mountain zone including snowfall,
+      temperature, wind, and snow conditions. Enables correlation between weather
+      and operations.
+
+      DATA COVERAGE:
+      - Historical: 2 ski seasons (Nov 2023 - Apr 2025)
+      - Granularity: Daily observations by mountain zone
+      - Zones: Summit Peak, North Ridge, Base Area, etc. (8 zones)
+      - Records: ~2,100 weather observations
+      - Refresh: Updated nightly at 2 AM MST
+
+      KEY METRICS AVAILABLE:
+      - TOTAL_SNOWFALL: Cumulative snowfall in inches
+      - MAX_SNOWFALL: Maximum single-day snowfall
+      - AVG_SNOWFALL: Average snowfall per observation
+      - MAX_BASE_DEPTH: Maximum snow base depth
+      - MIN_TEMP / MAX_TEMP: Temperature extremes (Fahrenheit)
+      - MAX_WIND: Maximum wind speed (MPH)
+      - POWDER_DAY_COUNT: Days with 6+ inches new snow
+      - HIGH_WIND_COUNT: Days with 25+ MPH wind
+      - STORM_COUNT: Storm warning days
+      - OBSERVATION_COUNT: Number of observations
+
+      KEY DIMENSIONS:
+      - FULL_DATE, DAY_NAME, SKI_SEASON, MONTH_NAME, IS_WEEKEND, IS_HOLIDAY
+      - MOUNTAIN_ZONE (Summit Peak, North Ridge, Base Area, etc.)
+      - SNOW_CONDITION (Excellent, Good, Fair, Poor)
+
+      WHEN TO USE:
+      - Questions about snowfall totals or snow depth
+      - Questions about powder days or storm events
+      - Temperature or wind analysis
+      - Weather patterns by zone or time period
+      - Correlating weather with operations (combine with LiftOperationsAnalytics)
+
+      WHEN NOT TO USE:
+      - Do NOT use for weather FORECASTS (this is historical data only)
+      - Do NOT use for current real-time conditions
+      - Do NOT use for avalanche or safety conditions (contact ski patrol)
+
+      QUERY BEST PRACTICES:
+      - For powder day analysis: Use POWDER_DAY_COUNT or filter on snowfall >= 6
+      - For zone comparison: GROUP BY MOUNTAIN_ZONE
+      - For seasonal trends: GROUP BY SKI_SEASON or MONTH_NAME
+      - For storm impact: Filter SNOW_CONDITION = 'Excellent' for post-storm days
+
+      EXAMPLE QUERIES:
+      - "How many powder days did we have in the 2023-2024 season?"
+      - "What is the average snowfall by month for Summit Peak?"
+      - "Show me temperature extremes by mountain zone"
+      - "Which months have the most high-wind days?"
+
+  # ---------------------------------------------------------------------------
+  # TOOL 4: Safety Incidents Analytics
+  # ---------------------------------------------------------------------------
+  - name: SafetyIncidentsAnalytics
+    type: cortex_analyst_text_to_sql
+
+    semantic_view:
+      database: SKI_RESORT_DB
+      schema: SEMANTIC
+      name: SEM_SAFETY_INCIDENTS
+
+    description: |
+      Analyzes safety incidents, accident reports, and ski patrol response times.
+      Critical for operations teams to monitor safety trends and response efficiency.
+
+      DATA COVERAGE:
+      - Incidents: Safety incidents across all terrain
+      - Historical: Current season data
+      - Refresh: Updated nightly at 2 AM MST
+
+      KEY METRICS AVAILABLE:
+      - TOTAL_INCIDENTS: Total safety incidents
+      - AVERAGE_SEVERITY: Average incident severity score (1-4)
+      - CRITICAL_INCIDENTS: Count of critical severity incidents
+      - AVG_PATROL_RESPONSE: Average ski patrol response time (minutes)
+
+      KEY DIMENSIONS:
+      - INCIDENT_DATE: Date of incident
+      - INCIDENT_TYPE: Type (Injury, Collision, Lost Skier, Lift Stop, etc.)
+      - SEVERITY: Level (Minor, Moderate, Serious, Critical)
+      - LOCATION_ID, LIFT_ID, TRAIL_NAME: Where incident occurred
+      - CUSTOMER_SKILL_LEVEL: Skill level of involved party
+      - TRANSPORT_REQUIRED: Whether medical transport was needed
+
+      WHEN TO USE:
+      - Questions about incident trends and patterns
+      - Ski patrol response time analysis
+      - Safety hotspot identification
+      - Incident severity analysis
+      - Correlation between weather/conditions and incidents
+
+      WHEN NOT TO USE:
+      - Do NOT use for individual incident details or personal info
+      - Do NOT use for real-time incident tracking
+
+      EXAMPLE QUERIES:
+      - "What are the most common incident types?"
+      - "How has ski patrol response time trended?"
+      - "Which trails have the most incidents?"
+      - "Show incidents by severity level"
+
+  # ---------------------------------------------------------------------------
+  # TOOL 5: ML Visitor Forecasting
+  # ---------------------------------------------------------------------------
+  - name: VisitorForecast
+    type: procedure
+
+    identifier:
+      database: SKI_RESORT_DB
+      schema: MARTS
+      name: FORECAST_VISITORS_ML
+
+    warehouse: SNOWPARK_WH  # Must use Snowpark-optimized warehouse
+
+    parameters:
+      - name: forecast_start_date
+        type: DATE
+        description: "Start date for forecast (YYYY-MM-DD format)"
+        required: true
+      - name: days_ahead
+        type: NUMBER
+        description: "Number of days to forecast (default 7, max 30)"
+        required: false
+        default: 7
+
+    description: |
+      ML-powered visitor forecasting using XGBoost model trained on 4 years of
+      historical data. Predicts daily visitor counts and provides staffing
+      recommendations based on expected demand.
+
+      MODEL DETAILS:
+      - Algorithm: XGBoost regression
+      - Training data: Nov 2020 - Nov 2025 (4+ ski seasons)
+      - Features: Day of week, month, season, holidays, weather patterns
+      - Accuracy: ~15% MAPE on validation set
+      - Model registry: SKI_RESORT_DB.MODELS.VISITOR_FORECASTER
+      - Refresh: Model retrained monthly or when drift detected
+
+      RETURNS (JSON):
+      - model: Model name and version
+      - predictions: Array of daily forecasts with:
+        - date: Forecast date
+        - day: Day of week name
+        - predicted_visitors: Expected visitor count
+        - staffing_level: Recommended staffing (Minimal/Light/Moderate/Full/Peak)
+        - lift_operators: Recommended lift operator count
+        - food_beverage: F&B locations to open
+      - summary: Total, average, peak day stats
+
+      STAFFING RECOMMENDATIONS:
+      - Minimal (<500): 6-8 lift operators, 1 F&B location
+      - Light (500-1000): 8-10 operators, 2 F&B locations
+      - Moderate (1000-2000): 12-14 operators, 3 F&B locations
+      - Full (2000-3500): 16-18 operators, all F&B locations
+      - Peak (3500+): 20+ operators, all locations fully staffed
+
+      WHEN TO USE:
+      - Planning staffing levels for upcoming days/weeks
+      - Anticipating busy vs slow periods
+      - Preparing for holidays and peak weekends
+      - Resource allocation decisions
+      - "How many visitors should we expect this weekend?"
+      - "What's the forecast for next week?"
+      - "How should we staff for the holidays?"
+
+      WHEN NOT TO USE:
+      - Do NOT use for real-time current conditions
+      - Do NOT use for weather forecasts (this predicts visitors, not weather)
+      - Do NOT use for forecasts > 30 days out (accuracy degrades)
+
+      EXAMPLE USAGE:
+      - CALL FORECAST_VISITORS_ML('2025-12-20'::DATE, 14) -- Holiday period
+      - CALL FORECAST_VISITORS_ML(CURRENT_DATE + 1, 7) -- Next week
+
+  # ---------------------------------------------------------------------------
+  # TOOL 5: Quick Forecast (Next Week)
+  # ---------------------------------------------------------------------------
+  - name: ForecastNextWeek
+    type: procedure
+
+    identifier:
+      database: SKI_RESORT_DB
+      schema: MARTS
+      name: FORECAST_NEXT_WEEK
+
+    warehouse: SNOWPARK_WH
+
+    parameters: []  # No parameters needed
+
+    description: |
+      Convenience procedure that returns ML forecast for the next 7 days
+      starting tomorrow. Quick access for daily planning without specifying dates.
+
+      RETURNS: Same JSON format as VisitorForecast tool
+
+      WHEN TO USE:
+      - Daily morning planning meetings
+      - Quick check on upcoming week's expected visitors
+      - "What's the forecast for next week?"
+      - "How busy will we be this week?"
+
+# -----------------------------------------------------------------------------
+# INSTRUCTIONS
+# -----------------------------------------------------------------------------
+instructions:
+
+  # ---------------------------------------------------------------------------
+  # RESPONSE INSTRUCTIONS (HOW to format and present answers)
+  # ---------------------------------------------------------------------------
+  response: |
+    **RESPONSE STYLE:**
+    - Be concise and direct - operations teams need quick answers
+    - Lead with actionable numbers and recommendations first
+    - Use active voice and clear statements
+    - Avoid hedging language like "it seems" or "it appears"
+
+    **DATA PRESENTATION:**
+    - Use tables for multi-lift or multi-day comparisons (>3 items)
+    - Use bar charts for rankings and comparisons
+    - Use line charts for time-series trends
+    - For single metrics, state directly: "Average wait is 12 minutes"
+    - Always include sample size and time period context
+
+    **NUMBER FORMATTING:**
+    - Wait times: "X minutes" (rounded to nearest minute)
+    - Visitor counts: Use commas (1,234)
+    - Percentages: One decimal place (87.5%)
+    - Dates: "Saturday, Dec 23" or "2024-01-15"
+    - Temperatures: Include "°F" suffix
+
+    **RESPONSE STRUCTURE:**
+
+    For "What is X?" questions:
+    - Lead with direct answer with key number
+    - Follow with supporting context
+    - Example: "Average wait at Summit Gondola is 18 minutes on weekends,
+      compared to 8 minutes on weekdays. This is 40% above the resort-wide average."
+
+    For "Which/Compare" questions:
+    - Summary statement with top finding
+    - Table or chart with data
+    - Key insights highlighted
+    - Example: "Summit Gondola has the longest waits (18 min avg). [table]
+      Note: Advanced lifts have lower waits despite popularity due to faster skiers."
+
+    For operational recommendations:
+    - State the recommendation clearly
+    - Provide supporting data
+    - Include confidence/limitations
+    - Example: "Recommend adding 2 operators to Summit Gondola on weekends.
+      Data shows 18-minute waits vs 15-minute target. Based on 45 weekend days."
+
+    **ERROR HANDLING:**
+    - When data unavailable: "I don't have data for [X]. My coverage is [scope]."
+    - When query ambiguous: "Could you clarify: did you mean [A] or [B]?"
+    - When results empty: "No results found for [criteria]. Try [alternative]."
+
+  # ---------------------------------------------------------------------------
+  # ORCHESTRATION INSTRUCTIONS (WHAT to do and HOW to reason)
+  # ---------------------------------------------------------------------------
+  orchestration: |
+    **YOUR ROLE:**
+    You are "Ski Operations Assistant", supporting lift supervisors and operations
+    managers in daily mountain operations. You analyze lift performance, staffing
+    coverage, and weather conditions to optimize operations and customer experience.
+
+    **YOUR USERS:**
+    - PRIMARY: Lift supervisors, operations managers overseeing daily operations
+    - SECONDARY: Resort executives reviewing operational KPIs
+    - TERTIARY: Staffing coordinators planning resource allocation
+
+    **DOMAIN CONTEXT:**
+    - Resort: 18 lifts (2 gondolas, 16 chairlifts) serving 2,000-5,000 daily visitors
+    - Terrain: Beginner (2 lifts), Intermediate (6), Advanced (8), Expert (2)
+    - Wait time target: < 15 minutes during peak periods
+    - Peak periods: Weekends, holidays (Dec 20-Jan 5, Presidents Day, Spring Break)
+    - Operating season: November 1 - April 30
+    - Staffing levels: Minimal (8-10), Moderate (12-15), Full (18+)
+    - Departments: Lift Operations, F&B, Rentals, Guest Services, Ski Patrol
+
+    **TOOL SELECTION RULES:**
+
+    For LIFT WAIT TIME questions → Use LiftOperationsAnalytics
+    Examples: "What's the average wait at Summit?", "Which lifts have longest waits?",
+    "Show wait times by hour", "What's capacity utilization?"
+
+    For STAFFING questions → Use StaffingAnalytics
+    Examples: "What's our coverage ratio?", "Which departments are understaffed?",
+    "Show labor hours by department", "Weekend staffing levels?"
+
+    For WEATHER questions → Use WeatherAnalytics
+    Examples: "How many powder days?", "What's total snowfall?", "Temperature trends?",
+    "Which zones got most snow?"
+
+    For VISITOR FORECASTS → Use VisitorForecast or ForecastNextWeek
+    Examples: "How many visitors should we expect?", "What's the forecast for next week?",
+    "How busy will the holiday weekend be?", "How should we staff for Saturday?",
+    "What's the predicted attendance for December?"
+
+    For COMBINED ANALYSIS (weather + operations):
+    1. Query WeatherAnalytics for weather context
+    2. Query LiftOperationsAnalytics for operational metrics
+    3. Synthesize findings (e.g., "Powder days see 40% higher attendance")
+
+    For PLANNING DECISIONS (forecast + staffing):
+    1. Call VisitorForecast to get predicted visitor counts
+    2. Use the staffing recommendations in the forecast response
+    3. Compare with current staffing levels from StaffingAnalytics if needed
+
+    **BUSINESS RULES:**
+    - When analyzing weekends: Filter IS_WEEKEND = true
+    - When analyzing peak season: Filter ski_season and months Dec-Feb
+    - When analyzing holidays: Filter IS_HOLIDAY = true
+    - For terrain analysis: Group by TERRAIN_TYPE or DIFFICULTY_ACCESS
+    - For hourly patterns: Group by SCAN_HOUR (morning rush = 9-11)
+    - If results > 20 rows: Aggregate or filter before presenting
+
+    **BOUNDARIES & LIMITATIONS:**
+    - You do NOT have access to real-time current conditions
+    - You do NOT have weather forecasts (historical weather only)
+    - You DO have ML visitor forecasts up to 30 days ahead (use VisitorForecast tool)
+    - You do NOT have individual employee HR data, payroll, or schedules
+    - You do NOT have financial/revenue data (refer to ResortExecutive agent)
+    - You do NOT have customer demographics (refer to CustomerInsights agent)
+    - Data freshness: Historical data updated nightly at 2 AM MST
+    - Forecast freshness: ML model retrained monthly
+
+    **EDGE CASE HANDLING:**
+    - Future weather: "I don't have weather forecasts. Check weather.com or NOAA."
+    - Future visitors: "I CAN forecast visitors! Let me run the ML forecast..." (use VisitorForecast)
+    - Employee schedules: "Individual HR data is not available. Contact HR."
+    - Real-time status: "My data is historical. Check resort operations for current status."
+    - Financial questions: "Revenue data is not in my scope. The ResortExecutive agent can help."
+    - Dates outside range: "My historical data covers Nov 2020 - Nov 2025. Forecasts available up to 30 days ahead."
+    - Long-range forecasts: "ML forecasts are most accurate within 14 days. Beyond that, accuracy decreases."
+
+# -----------------------------------------------------------------------------
+# DEPLOYMENT CONFIGURATION
+# -----------------------------------------------------------------------------
+deployment:
+  database: SNOWFLAKE_INTELLIGENCE
+  schema: AGENTS
+  warehouse: COMPUTE_WH
+
+  # Environment-specific overrides loaded from environments/*.yml
+  environments:
+    - dev
+    - staging
+    - prod

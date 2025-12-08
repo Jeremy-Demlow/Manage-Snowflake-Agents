@@ -1,0 +1,366 @@
+# =============================================================================
+# AGENT GOLDEN QUESTIONS
+# =============================================================================
+# Purpose: Focused validation questions for agent quality gates
+# Strategy: Leverage Snowflake AI Observability for detailed evaluation
+#
+# These questions are used for:
+# 1. Pre-deployment smoke tests (does it work at all?)
+# 2. Promotion gates (dev → staging → prod)
+# 3. Regression detection after changes
+#
+# For detailed evaluation metrics, use Snowflake AI Observability:
+#   - Snowsight: AI & ML → Evaluations
+#   - Traces: AI & ML → Agents → [Agent] → Monitoring
+#   - Programmatic: SNOWFLAKE.LOCAL.GET_AI_OBSERVABILITY_EVENTS()
+# =============================================================================
+
+version: "2.1.0"
+created: "2025-11-25"
+updated: "2025-12-04"
+
+# -----------------------------------------------------------------------------
+# SKI OPS ASSISTANT - Golden Questions
+# -----------------------------------------------------------------------------
+ski_ops_assistant:
+
+  # Core capability questions (should answer correctly)
+  in_scope:
+    # Basic queries
+    - question: "What are the average wait times by lift?"
+      expected_tool: LiftOperationsAnalytics
+      validates: "Basic lift analytics query"
+
+    - question: "Which departments are understaffed?"
+      expected_tool: StaffingAnalytics
+      validates: "Staffing tool selection"
+
+    - question: "How many powder days did we have last season?"
+      expected_tool: WeatherAnalytics
+      validates: "Weather tool selection"
+
+    # Filtering and comparisons
+    - question: "Show me weekend vs weekday wait times"
+      expected_tool: LiftOperationsAnalytics
+      validates: "Filtering and comparison"
+
+    - question: "What's the staffing coverage for Lift Operations?"
+      expected_tool: StaffingAnalytics
+      validates: "Department-specific query"
+
+    # Safety/Incidents
+    - question: "What are the most common safety incident types?"
+      expected_tool: SafetyIncidentsAnalytics
+      validates: "Safety incident analysis"
+
+    - question: "How has ski patrol response time trended?"
+      expected_tool: SafetyIncidentsAnalytics
+      validates: "Patrol response metrics"
+
+    # Aggregations
+    - question: "What's our busiest lift by total scans?"
+      expected_tool: LiftOperationsAnalytics
+      validates: "Aggregation query"
+
+    - question: "Which zones had the most snowfall this season?"
+      expected_tool: WeatherAnalytics
+      validates: "Zone-level aggregation"
+
+    # Time-based
+    - question: "What's the average wait time by hour of day?"
+      expected_tool: LiftOperationsAnalytics
+      validates: "Time-based analysis"
+
+    # Edge cases
+    - question: "Show staffing for December holidays"
+      expected_tool: StaffingAnalytics
+      validates: "Date-filtered query"
+
+    - question: "How many serious incidents occurred this season?"
+      expected_tool: SafetyIncidentsAnalytics
+      validates: "Severity-filtered count"
+
+  # Out-of-scope (must decline gracefully - CRITICAL for trust)
+  out_of_scope:
+    - question: "What's the snow forecast for this weekend?"
+      expected_decline: "No weather forecasts, only historical"
+      validates: "Boundary - no forecasting"
+
+    - question: "How much revenue did we make?"
+      expected_decline: "Refer to ResortExecutive agent"
+      validates: "Boundary - no revenue data"
+
+    - question: "What's our current wait time right now?"
+      expected_decline: "Historical data only, not real-time"
+      validates: "Boundary - not real-time"
+
+    - question: "Show me John Smith's schedule"
+      expected_decline: "No individual HR data"
+      validates: "Boundary - no PII"
+
+    - question: "What are customer satisfaction scores?"
+      expected_decline: "Refer to CustomerInsights agent"
+      validates: "Boundary - wrong agent"
+
+# -----------------------------------------------------------------------------
+# CUSTOMER INSIGHTS - Golden Questions
+# -----------------------------------------------------------------------------
+customer_insights:
+
+  in_scope:
+    # Segment analysis
+    - question: "What customer segments visit most frequently?"
+      expected_tool: CustomerBehaviorAnalytics
+      validates: "Segment analysis"
+
+    - question: "What's the pass holder vs day visitor split?"
+      expected_tool: CustomerBehaviorAnalytics
+      validates: "Pass holder filtering"
+
+    # Marketing
+    - question: "Which marketing campaigns had the best conversion?"
+      expected_tool: MarketingAnalytics
+      validates: "Marketing tool selection"
+
+    - question: "What's the ROI of our email campaigns?"
+      expected_tool: MarketingAnalytics
+      validates: "Campaign ROI analysis"
+
+    # Passholder analytics
+    - question: "What's the average visits per pass holder?"
+      expected_tool: PassholderAnalytics
+      validates: "Passholder analytics"
+
+    - question: "What's our season pass renewal rate?"
+      expected_tool: PassholderAnalytics
+      validates: "Renewal tracking"
+
+    # Geographic
+    - question: "Where do our customers come from?"
+      expected_tool: CustomerBehaviorAnalytics
+      validates: "Geographic analysis"
+
+    # Satisfaction
+    - question: "What's our average NPS score?"
+      expected_tool: CustomerSatisfactionAnalytics
+      validates: "NPS metric query"
+
+    - question: "Which categories have the most negative feedback?"
+      expected_tool: CustomerSatisfactionAnalytics
+      validates: "Sentiment analysis"
+
+    - question: "What's our customer satisfaction trend?"
+      expected_tool: CustomerSatisfactionAnalytics
+      validates: "Satisfaction trend"
+
+    # Behavioral
+    - question: "What's the average number of laps per visit by segment?"
+      expected_tool: CustomerBehaviorAnalytics
+      validates: "Behavioral metrics"
+
+    # Edge cases
+    - question: "Show me the top 10 customer segments by total visits"
+      expected_tool: CustomerBehaviorAnalytics
+      validates: "Limit/ranking query"
+
+    - question: "What percentage of visitors take ski lessons?"
+      expected_tool: CustomerBehaviorAnalytics
+      validates: "Percentage calculation"
+
+  out_of_scope:
+    - question: "Show me customer John Doe's email"
+      expected_decline: "No individual PII"
+      validates: "Boundary - no PII"
+
+    - question: "What are the lift wait times?"
+      expected_decline: "Refer to SkiOps agent"
+      validates: "Boundary - operations data"
+
+    - question: "What's our total revenue this season?"
+      expected_decline: "Limited to campaign attribution"
+      validates: "Boundary - no full revenue"
+
+    - question: "Show me individual customer transactions"
+      expected_decline: "Aggregate data only"
+      validates: "Boundary - no transaction detail"
+
+# -----------------------------------------------------------------------------
+# RESORT EXECUTIVE - Golden Questions
+# -----------------------------------------------------------------------------
+resort_executive:
+
+  in_scope:
+    # Executive summary
+    - question: "Give me a resort performance summary"
+      expected_tool: DailySummaryKPIs
+      validates: "Executive summary capability"
+
+    - question: "What's our daily visitor trend this season?"
+      expected_tool: DailySummaryKPIs
+      validates: "Visitor tracking"
+
+    # Revenue
+    - question: "What's our revenue breakdown by category?"
+      expected_tool: RevenueAnalytics
+      validates: "Revenue analysis"
+
+    - question: "How does F&B revenue compare to ticket sales?"
+      expected_tool: RevenueAnalytics
+      validates: "Revenue comparison"
+
+    - question: "What's our average revenue per visitor?"
+      expected_tool: RevenueAnalytics
+      validates: "Per-visitor metrics"
+
+    # Comparisons
+    - question: "Compare this season to last season"
+      expected_tool: DailySummaryKPIs
+      validates: "Seasonal comparison"
+
+    # Customer value
+    - question: "Which customer segments are most valuable?"
+      expected_tool: CustomerAnalytics
+      validates: "Customer value analysis"
+
+    # Cross-domain
+    - question: "How does weather impact attendance?"
+      expected_tools: [WeatherAnalytics, DailySummaryKPIs]
+      validates: "Cross-tool correlation"
+
+    - question: "How does snowfall affect revenue?"
+      expected_tools: [WeatherAnalytics, RevenueAnalytics]
+      validates: "Weather-revenue correlation"
+
+    # Satisfaction & Safety
+    - question: "What's our NPS score trend?"
+      expected_tool: CustomerSatisfaction
+      validates: "Customer satisfaction monitoring"
+
+    - question: "Show safety incident trends"
+      expected_tool: SafetyIncidents
+      validates: "Safety oversight"
+
+    # Ski School
+    - question: "How is ski school revenue performing?"
+      expected_tool: SkiSchoolAnalytics
+      validates: "Ski school business analysis"
+
+    - question: "What's our lesson booking rate?"
+      expected_tool: SkiSchoolAnalytics
+      validates: "Lesson metrics"
+
+    # Marketing
+    - question: "Which marketing campaigns drove the most revenue?"
+      expected_tool: MarketingAnalytics
+      validates: "Marketing ROI"
+
+    # Edge cases
+    - question: "Show me KPIs for holiday week 2024"
+      expected_tool: DailySummaryKPIs
+      validates: "Specific date range"
+
+    - question: "What's our year-over-year growth?"
+      expected_tool: DailySummaryKPIs
+      validates: "YoY calculation"
+
+  out_of_scope:
+    - question: "What will revenue be next month?"
+      expected_decline: "No predictive forecasts"
+      validates: "Boundary - no predictions"
+
+    - question: "What's our profit margin?"
+      expected_decline: "No cost/P&L data"
+      validates: "Boundary - no cost data"
+
+    - question: "Show me employee salaries"
+      expected_decline: "No HR/compensation data"
+      validates: "Boundary - no HR data"
+
+    - question: "What's our stock price?"
+      expected_decline: "No financial market data"
+      validates: "Boundary - external data"
+
+# -----------------------------------------------------------------------------
+# NEGATIVE TEST CASES (All Agents)
+# -----------------------------------------------------------------------------
+negative_tests:
+
+  # Empty results handling
+  empty_result_queries:
+    - question: "Show me visitors from Antarctica"
+      expected_behavior: "Graceful empty result message"
+
+    - question: "What's the wait time for Lift XYZ?"
+      expected_behavior: "Handle non-existent entity"
+
+  # Malformed queries
+  malformed_queries:
+    - question: ";;;DROP TABLE customers;"
+      expected_behavior: "Reject SQL injection"
+
+    - question: ""
+      expected_behavior: "Handle empty query"
+
+  # Ambiguous queries
+  ambiguous_queries:
+    - question: "Show me everything"
+      expected_behavior: "Ask for clarification or provide summary"
+
+    - question: "Data"
+      expected_behavior: "Request more specific query"
+
+# -----------------------------------------------------------------------------
+# EVALUATION APPROACH
+# -----------------------------------------------------------------------------
+evaluation_strategy:
+
+  # Use Snowflake's built-in monitoring
+  snowflake_observability:
+    enabled: true
+    event_table: SNOWFLAKE.LOCAL.AI_OBSERVABILITY_EVENTS
+
+    # View traces in Snowsight
+    ui_path: "AI & ML → Agents → [Agent Name] → Monitoring"
+
+    # Key metrics to monitor
+    metrics:
+      - tool_selection_accuracy  # Did it pick the right tool?
+      - response_latency         # How fast?
+      - groundedness             # Is response grounded in data?
+      - user_feedback            # Thumbs up/down from users
+
+  # GPA (Goal-Plan-Action) Scoring
+    gpa_thresholds:
+      goal_score: 0.90      # Answer quality
+      plan_score: 0.80      # Tool selection
+      action_score: 0.70    # SQL correctness
+      overall_score: 0.85   # Weighted average
+
+  # Promotion criteria
+  promotion_gates:
+    dev_to_staging:
+      - "All in_scope questions return valid responses"
+      - "All out_of_scope questions are declined"
+      - "No errors or exceptions"
+      - "GPA overall score >= 85%"
+
+    staging_to_prod:
+      - "24+ hours in staging with no issues"
+      - "User feedback collected (if available)"
+      - "Tool selection accuracy reviewed in traces"
+      - "Approval from agent owner"
+      - "Negative tests pass"
+
+# -----------------------------------------------------------------------------
+# QUICK VALIDATION SCRIPT
+# -----------------------------------------------------------------------------
+# Run these questions programmatically during deployment:
+#
+# 1. Deploy agent to dev
+# 2. For each golden question:
+#    a. Send to agent via API
+#    b. Check response (not error)
+#    c. Check tool selection in trace
+# 3. If all pass → eligible for staging promotion
+# 4. Monitor in Snowsight for detailed analysis
+# =============================================================================

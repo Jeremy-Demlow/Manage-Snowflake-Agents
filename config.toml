@@ -1,0 +1,15 @@
+# Snowflake CLI Configuration Template
+# This file is used by GitHub Actions
+# Actual credentials are injected via environment variables
+
+default_connection_name = "default"
+
+[connections.default]
+# Connection details are provided via environment variables:
+# SNOWFLAKE_CONNECTIONS_DEFAULT_ACCOUNT
+# SNOWFLAKE_CONNECTIONS_DEFAULT_USER
+# SNOWFLAKE_CONNECTIONS_DEFAULT_PASSWORD
+# SNOWFLAKE_CONNECTIONS_DEFAULT_WAREHOUSE
+# SNOWFLAKE_CONNECTIONS_DEFAULT_DATABASE
+# SNOWFLAKE_CONNECTIONS_DEFAULT_SCHEMA
+# SNOWFLAKE_CONNECTIONS_DEFAULT_ROLE

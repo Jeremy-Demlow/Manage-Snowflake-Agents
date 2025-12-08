@@ -1,0 +1,42 @@
+# ============================================================================
+# VISITOR FORECASTER - DEV ENVIRONMENT OVERRIDES
+# ============================================================================
+# Faster iteration config - fewer features, simpler model
+# Usage: FeatureEngineer.from_config('visitor_forecast', env='dev')
+# ============================================================================
+
+# Override: Use fewer features for faster training
+include:
+  - date_features      # Keep core date features
+  - weather_features   # Keep weather features
+  # - day_dummies      # Skip one-hot encoding for speed
+  # - month_dummies    # Skip one-hot encoding for speed
+
+# Exclude some weather features we don't need in dev
+exclude:
+  - is_high_wind
+  - snow_condition_encoded
+
+# Simpler lag features
+lag_features:
+  source: UNIQUE_VISITORS
+  lags: [7, 14]         # Fewer lags for speed
+
+# Simpler rolling features
+rolling_features:
+  source: UNIQUE_VISITORS
+  windows: [7]          # Single window for speed
+  aggregation: mean
+
+# Faster hyperparams for dev iteration
+hyperparams:
+  n_estimators: 100     # Fewer trees
+  max_depth: 4          # Shallower trees
+  learning_rate: 0.1    # Faster learning
+  early_stopping_rounds: 5
+
+# Relaxed quality gates for dev
+quality_gates:
+  min_r2: 0.50          # Lower bar for dev
+  max_mae: 300          # Allow higher error
+  max_mape: 40.0

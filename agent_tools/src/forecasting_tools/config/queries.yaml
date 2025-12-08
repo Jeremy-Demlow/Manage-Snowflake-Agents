@@ -1,0 +1,100 @@
+# ============================================================================
+# SQL QUERIES CONFIGURATION
+# ============================================================================
+# All SQL queries in one place - change here, affects everywhere
+# Use {param} syntax for dynamic parameters
+# ============================================================================
+
+database: SKI_RESORT_DB
+schema: MARTS
+
+queries:
+  # Training data query
+  # Note: Columns must match what's actually in DIM_DATE
+  training_data: |
+    SELECT
+        d.FULL_DATE,
+        d.DAY_NAME,
+        d.DAY_OF_WEEK,
+        d.MONTH_NUM,
+        d.MONTH_NAME,
+        d.SKI_SEASON,
+        d.IS_WEEKEND,
+        d.IS_HOLIDAY,
+        d.SNOW_CONDITION,
+        COUNT(DISTINCT p.CUSTOMER_KEY) as UNIQUE_VISITORS,
+        COUNT(*) as TOTAL_VISITS,
+        SUM(p.TOTAL_LIFT_RIDES) as TOTAL_LIFT_RIDES
+    FROM {database}.{schema}.DIM_DATE d
+    LEFT JOIN {database}.{schema}.FACT_PASS_USAGE p ON p.DATE_KEY = d.DATE_KEY
+    WHERE d.FULL_DATE >= DATEADD('year', -{years_back}, CURRENT_DATE())
+      AND d.FULL_DATE < CURRENT_DATE()
+    GROUP BY ALL
+    ORDER BY d.FULL_DATE
+
+  # Historical data for lag features (shorter lookback)
+  historical_for_lags: |
+    SELECT
+        d.FULL_DATE,
+        d.DAY_OF_WEEK,
+        d.MONTH_NUM,
+        d.IS_WEEKEND,
+        d.IS_HOLIDAY,
+        d.SNOW_CONDITION,
+        COUNT(DISTINCT p.CUSTOMER_KEY) as UNIQUE_VISITORS
+    FROM {database}.{schema}.DIM_DATE d
+    LEFT JOIN {database}.{schema}.FACT_PASS_USAGE p ON p.DATE_KEY = d.DATE_KEY
+    WHERE d.FULL_DATE >= DATEADD('day', -{days_back}, CURRENT_DATE())
+    GROUP BY ALL
+    ORDER BY d.FULL_DATE
+
+  # Validation query - predictions vs actuals
+  validation: |
+    WITH predictions AS (
+        SELECT
+            input_date,
+            model_version,
+            predicted_visitors,
+            prediction_timestamp,
+            request_source
+        FROM {database}.{schema}.ML_PREDICTION_LOG
+        WHERE model_name = '{model_name}'
+          AND input_date <= CURRENT_DATE()
+    ),
+    actuals AS (
+        SELECT
+            d.FULL_DATE as actual_date,
+            COUNT(DISTINCT p.CUSTOMER_KEY) as actual_visitors
+        FROM {database}.{schema}.DIM_DATE d
+        LEFT JOIN {database}.{schema}.FACT_PASS_USAGE p ON p.DATE_KEY = d.DATE_KEY
+        GROUP BY d.FULL_DATE
+    )
+    SELECT
+        p.input_date,
+        p.model_version,
+        p.predicted_visitors,
+        a.actual_visitors,
+        p.predicted_visitors - a.actual_visitors as error,
+        ABS(p.predicted_visitors - a.actual_visitors) as abs_error,
+        CASE WHEN a.actual_visitors > 0
+             THEN ABS(p.predicted_visitors - a.actual_visitors) / a.actual_visitors * 100
+             ELSE NULL END as pct_error,
+        p.request_source,
+        p.prediction_timestamp
+    FROM predictions p
+    JOIN actuals a ON p.input_date = a.actual_date
+    ORDER BY p.input_date DESC
+
+  # Log prediction
+  log_prediction: |
+    INSERT INTO {database}.{schema}.ML_PREDICTION_LOG
+    (model_name, model_version, input_date, predicted_visitors,
+     features_json, request_source)
+    VALUES (
+        '{model_name}',
+        '{model_version}',
+        '{input_date}',
+        {predicted_visitors},
+        PARSE_JSON($${features_json}$$),
+        '{request_source}'
+    )
