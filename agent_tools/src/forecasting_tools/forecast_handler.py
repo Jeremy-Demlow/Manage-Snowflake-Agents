@@ -237,18 +237,29 @@ def forecast_visitors(
             }
         )
 
-        # Log prediction for observability
+        # Log prediction for ML Observability
+        day_features = input_rows[i] if i < len(input_rows) else {}
         try:
             session.sql(
                 f"""
-                INSERT INTO SKI_RESORT_DB.MARTS.ML_PREDICTION_LOG
-                (model_name, model_version, input_date, predicted_visitors, request_source)
-                SELECT 'VISITOR_FORECASTER', '{version_name}', '{pred_date.strftime('%Y-%m-%d')}',
-                       {pred_visitors}, 'agent'
+                INSERT INTO SKI_RESORT_DB.MODELS.ML_PREDICTION_LOG
+                (model_name, model_version, forecast_date, predicted_visitors,
+                 day_of_week, month, is_weekend, lag_7, lag_14, rolling_7_mean, request_source)
+                VALUES (
+                    'VISITOR_FORECASTER', '{version_name}', '{pred_date.strftime('%Y-%m-%d')}',
+                    {pred_visitors},
+                    {int(day_features.get('day_of_week', pred_date.weekday()))},
+                    {pred_date.month},
+                    {pred_date.weekday() >= 5},
+                    {day_features.get('lag_7', 'NULL')},
+                    {day_features.get('lag_14', 'NULL')},
+                    {day_features.get('rolling_7_mean', 'NULL')},
+                    'agent'
+                )
             """
             ).collect()
-        except:
-            pass
+        except Exception:
+            pass  # Don't fail prediction if logging fails
 
     return json.dumps(
         {

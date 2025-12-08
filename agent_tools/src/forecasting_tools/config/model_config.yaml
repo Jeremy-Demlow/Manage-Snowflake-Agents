@@ -18,7 +18,36 @@ experiments:
 prediction_log:
   table: ML_PREDICTION_LOG
   database: SKI_RESORT_DB
-  schema: MARTS
+  schema: MODELS
+
+# =============================================================================
+# ML OBSERVABILITY / MONITORING
+# =============================================================================
+monitoring:
+  enabled: true
+
+  # Prediction logging settings
+  log_predictions: true
+  log_features: true  # Store key features for drift detection
+
+  # Performance thresholds (alerts trigger when exceeded)
+  thresholds:
+    mae_warning: 150      # MAE > 150 visitors = warning
+    mae_critical: 250     # MAE > 250 visitors = critical
+    mape_warning: 25      # MAPE > 25% = warning
+    mape_critical: 40     # MAPE > 40% = critical
+    drift_zscore: 2.0     # Feature drift > 2 std devs = alert
+
+  # Backfill schedule
+  backfill_actuals:
+    schedule: "0 6 * * *"  # 6am daily (cron)
+    timezone: "America/Los_Angeles"
+
+  # Views for dashboards
+  views:
+    daily_performance: ML_DAILY_PERFORMANCE
+    feature_drift: ML_FEATURE_DRIFT
+    monitor_source: ML_PREDICTION_MONITOR_SOURCE
 
 # =============================================================================
 # STAFFING LEVELS - Used by all forecasting scripts
