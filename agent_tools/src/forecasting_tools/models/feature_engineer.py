@@ -473,20 +473,18 @@ class FeatureEngineer:
                     weather_val = weather_forecast.get(source)
                     row[name] = mapping.get(weather_val, default)
 
-            # Lag features (use recent values)
+            # Lag features (use recent values with proper keys)
             if self.lag_config:
-                target = self.lag_config.get("source", self.target_column)
-                recent_avg = recent_values.get(target, 0)
                 for lag in self.lag_config.get("lags", []):
-                    row[f"lag_{lag}"] = recent_avg
+                    key = f"lag_{lag}"
+                    row[key] = recent_values.get(key, 0)
 
-            # Rolling features (use recent values)
+            # Rolling features (use recent values with proper keys)
             if self.rolling_config:
-                target = self.rolling_config.get("source", self.target_column)
-                recent_avg = recent_values.get(target, 0)
                 agg = self.rolling_config.get("aggregation", "mean")
                 for window in self.rolling_config.get("windows", []):
-                    row[f"rolling_{window}_{agg}"] = recent_avg
+                    key = f"rolling_{window}_{agg}"
+                    row[key] = recent_values.get(key, 0)
 
             rows.append(row)
 

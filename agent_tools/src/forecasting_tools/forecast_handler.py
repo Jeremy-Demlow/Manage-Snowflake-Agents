@@ -114,11 +114,14 @@ def forecast_visitors(
     # Get feature columns
     feature_cols = fe.get_feature_columns(hist_df)
 
-    # Calculate recent values for predictions
+    # Calculate recent values for predictions (must match all lag/rolling features)
     recent_values = {
         "lag_7": float(hist_df["UNIQUE_VISITORS"].tail(7).mean()),
         "lag_14": float(hist_df["UNIQUE_VISITORS"].tail(14).mean()),
+        "lag_21": float(hist_df["UNIQUE_VISITORS"].tail(21).mean()),
+        "lag_28": float(hist_df["UNIQUE_VISITORS"].tail(28).mean()),
         "rolling_7_mean": float(hist_df["UNIQUE_VISITORS"].tail(7).mean()),
+        "rolling_14_mean": float(hist_df["UNIQUE_VISITORS"].tail(14).mean()),
         "rolling_30_mean": float(hist_df["UNIQUE_VISITORS"].tail(30).mean()),
     }
 
