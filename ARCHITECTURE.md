@@ -90,6 +90,154 @@ graph TB
 
 ---
 
+## 💬 Agent in Action - Example Conversation
+
+> See what the Resort Executive Assistant can do in a real conversation:
+
+**👤 User:** *"Give me a complete performance summary for this week - revenue, visitors, and which segments are driving the business."*
+
+**🤖 Agent:**
+> **📊 Resort Performance Summary: Dec 1-8, 2025**
+>
+> **Executive Summary:** Total revenue of $90.8K from 4,247 visitors. F&B leading at 44%, followed by Tickets at 37%.
+>
+> | Business Unit | Revenue | % of Total | Transactions |
+> |---------------|---------|------------|--------------|
+> | Food & Beverage | $40,365 | 44% | 3,842 |
+> | Tickets | $33,197 | 37% | 1,156 |
+> | Rentals | $17,205 | 19% | 892 |
+>
+> **Top Customer Segments by Revenue:**
+> | Segment | Revenue | Visits | Rev/Visit |
+> |---------|---------|--------|-----------|
+> | Vacation Family | $38.2K | 1,247 | $30.63 |
+> | Weekend Warrior | $22.1K | 1,892 | $11.68 |
+> | Local Pass Holder | $18.4K | 892 | $20.63 |
+>
+> **Key Insight:** Vacation Families represent 42% of revenue despite only 29% of visits - highest value segment.
+
+**👤 User:** *"Great! Email me this report and subscribe me to weekly updates."*
+
+**🤖 Agent:**
+> ✅ **Email sent** to jeremy@example.com with subject "Resort Performance Summary - Dec 1-8, 2025"
+>
+> ✅ **Weekly subscription created** - You'll receive this analysis every Monday at 7am PST.
+
+**👤 User:** *"What visitor volumes should we expect for the holiday period?"*
+
+**🤖 Agent:**
+> **🔮 ML Visitor Forecast: Dec 20-31, 2025**
+>
+> | Date | Predicted Visitors | Confidence | Staffing Rec |
+> |------|-------------------|------------|--------------|
+> | Dec 20 (Sat) | 3,450 | High | Full staff |
+> | Dec 21 (Sun) | 2,890 | High | Standard+ |
+> | Dec 24 (Tue) | 4,120 | Medium | Full staff |
+> | Dec 25 (Wed) | 4,890 | Medium | Maximum |
+> | Dec 28 (Sat) | 5,200 | Medium | Maximum |
+>
+> **Peak Day:** Dec 28 - expect capacity crowds. Consider parking overflow and F&B extra prep.
+
+---
+
+## 🔧 Agent Tools (15 Total)
+
+The `RESORT_EXECUTIVE_DEV` agent has access to 15 specialized tools:
+
+### Analytics Tools (10 Semantic Views)
+| Tool | Data Domain | Example Question |
+|------|-------------|------------------|
+| `DailySummaryKPIs` | Executive overview | "How is the resort performing?" |
+| `RevenueAnalytics` | Revenue breakdown | "Revenue by business unit?" |
+| `CustomerAnalytics` | Customer segments | "Who are our highest-value customers?" |
+| `LiftOperations` | Lift performance | "Which lifts have longest waits?" |
+| `StaffingAnalytics` | Workforce | "Which departments are understaffed?" |
+| `WeatherAnalytics` | Weather impact | "How do powder days affect revenue?" |
+| `MarketingAnalytics` | Campaign ROI | "Which marketing channels perform best?" |
+| `CustomerSatisfaction` | NPS & feedback | "What's our NPS trend?" |
+| `SafetyIncidents` | Safety tracking | "Incident trends this season?" |
+| `SkiSchoolAnalytics` | Lessons & revenue | "Ski school revenue by lesson type?" |
+
+### ML & Action Tools (5)
+| Tool | Capability | Example |
+|------|------------|---------|
+| `VisitorForecast` | ML predictions | "Forecast holiday attendance" |
+| `ScheduleAlert` | Subscribe to reports | "Send me weekly revenue updates" |
+| `ViewMyAlerts` | List subscriptions | "What alerts am I subscribed to?" |
+| `UnsubscribeAlert` | Cancel subscription | "Stop the daily reports" |
+| `SendEmail` | Send reports now | "Email me this analysis" |
+
+---
+
+## 🧪 TruLens GPA Evaluation
+
+**Production-grade AI quality assurance** using TruLens Goal-Plan-Action framework.
+
+### Why Evaluate?
+
+| Challenge | TruLens Solution |
+|-----------|------------------|
+| "Did the agent answer correctly?" | **Correctness** scoring vs golden dataset |
+| "Is the agent improving?" | **A/B comparison** between versions |
+| "Which changes help?" | **Regression tracking** across releases |
+
+### Evaluation Flow
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│  Golden Dataset │────▶│  TruLens Eval   │────▶│   GPA Scores    │
+│  100+ Q&A pairs │     │  truelens_eval  │     │  Goal/Plan/Act  │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+                               │
+                               ▼
+                        ┌─────────────────┐
+                        │   Snowflake AI  │
+                        │  Observability  │
+                        │    Dashboard    │
+                        └─────────────────┘
+```
+
+### Running Evaluation
+
+```bash
+# Evaluate agent against golden dataset
+python truelens_eval.py --agent resort_executive --env dev
+
+# Compare baseline vs new version
+python truelens_eval.py --agent resort_executive --env dev --run-name "v2.1"
+```
+
+### GPA Metrics
+
+| Metric | What It Measures | Target |
+|--------|-----------------|--------|
+| **Goal** | Did the agent understand the question? | > 0.85 |
+| **Plan** | Did it select the right tools? | > 0.80 |
+| **Action** | Did it execute correctly? | > 0.80 |
+| **Correctness** | Does answer match ground truth? | > 0.75 |
+
+### Sample Golden Dataset Entry
+
+```yaml
+- question: "What's total revenue by business unit for December?"
+  expected_tools: [RevenueAnalytics]
+  ground_truth: |
+    F&B: ~$40K (44%)
+    Tickets: ~$33K (37%)
+    Rentals: ~$17K (19%)
+  tags: [revenue, executive]
+```
+
+### Continuous Improvement Loop
+
+1. **Baseline** - Run evaluation on current agent
+2. **Modify** - Update prompts, tools, or semantic models
+3. **Evaluate** - Run TruLens against same golden dataset
+4. **Compare** - Check if GPA scores improved
+5. **Deploy** - Only ship changes that improve scores
+
+---
+
 ## Component Details
 
 ### 1. Data Generation Layer
