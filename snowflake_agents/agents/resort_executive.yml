@@ -738,6 +738,57 @@ tools:
       2. Summarize what will be sent before sending
       3. Confirm successful delivery
 
+  # ---------------------------------------------------------------------------
+  # TOOL 16: Resort Documents Search (Cortex Search - Unstructured)
+  # ---------------------------------------------------------------------------
+  - name: ResortDocumentsSearch
+    type: cortex_search
+
+    cortex_search_service:
+      database: SKI_RESORT_DB
+      schema: DOCS
+      name: RESORT_DOCS_SEARCH
+
+    description: |
+      Search through resort documents, policies, reports, and knowledge base.
+
+      USE THIS TOOL FOR:
+      - Policy questions: "What's our refund policy?", "Season pass terms?"
+      - Safety information: "Avalanche protocols", "Emergency procedures"
+      - Business documents: "Q4 earnings targets", "Strategic plan goals"
+      - Operations guides: "Lift capacities", "Weather closure criteria"
+      - Employee questions: "Overtime policy", "Staff scheduling rules"
+      - Customer feedback: "Guest complaints about wait times"
+      - Marketing campaigns: "Powder alert campaign results"
+      - Incident analysis: "Safety incident patterns"
+
+      DOCUMENT TYPES AVAILABLE:
+      - safety: Mountain safety guides, avalanche protocols
+      - operations: Lift manuals, weather closure policies
+      - business: Earnings reports, strategic plans, pass holder analysis
+      - policy: Season pass terms, rental guides, refund policies
+      - employee: Handbooks, ski school guidelines
+      - product: Trail guides, terrain overviews
+      - feedback: Guest feedback summaries
+      - memo: Weekly operations memos
+      - marketing: Campaign briefs and results
+      - incident: Monthly incident summaries
+      - faq: Frequently asked questions
+
+      CROSS-DATA POWER:
+      Combine with structured data tools for powerful insights:
+
+      Example 1: "Customer feedback mentioned long wait times. Show actual data."
+      → Search documents for feedback → Query LiftOperations for wait times
+
+      Example 2: "Did we hit the Q4 revenue targets from our plan?"
+      → Search documents for targets → Query RevenueAnalytics for actuals
+
+      Example 3: "The memo said to expect 4,200 visitors. Did we hit it?"
+      → Search documents for forecast → Query DailySummaryKPIs for actual
+
+      ALWAYS cite the document source when providing information.
+
 # -----------------------------------------------------------------------------
 # INSTRUCTIONS
 # -----------------------------------------------------------------------------
@@ -831,6 +882,23 @@ instructions:
     For VISITOR FORECASTS → Use VisitorForecast
     For ML-powered predictions of future visitor volumes.
     Examples: "Forecast attendance", "Expected visitors for holidays", "Demand planning"
+
+    For POLICIES, REPORTS, & DOCUMENTS → Use ResortDocumentsSearch
+    Search unstructured documents for policies, guidelines, business reports, and knowledge.
+    Examples: "What's our refund policy?", "Q4 revenue targets", "Avalanche protocol"
+
+    **CROSS-DATA QUERIES (Structured + Unstructured):**
+    These are POWERFUL - combine document search with data queries:
+
+    Example: "Did we hit the revenue target from the strategic plan?"
+    1. ResortDocumentsSearch → Find target in strategic plan
+    2. RevenueAnalytics → Get actual revenue
+    3. Compare and present
+
+    Example: "Customer feedback mentions wait times. Show actual data."
+    1. ResortDocumentsSearch → Find feedback about wait times
+    2. LiftOperations → Get actual wait time metrics
+    3. Correlate and present findings
 
     **MULTI-TOOL COORDINATION:**
 

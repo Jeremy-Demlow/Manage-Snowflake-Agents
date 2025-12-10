@@ -7,6 +7,7 @@ Can be run from:
 - Snowpark Python UDFs/SPROCs (if deployed)
 """
 import json
+import uuid
 import yaml
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -81,6 +82,9 @@ def forecast_visitors(
     """
     import pandas as pd
     import numpy as np
+
+    # Generate run_id to track this forecast batch
+    run_id = str(uuid.uuid4())
 
     # Load feature engineer (same config used for training)
     fe = FeatureEngineer.from_config("visitor_forecast")
@@ -237,15 +241,16 @@ def forecast_visitors(
             }
         )
 
-        # Log prediction for ML Observability
+        # Log prediction for ML Observability (with run_id to track all runs)
         day_features = input_rows[i] if i < len(input_rows) else {}
         try:
             session.sql(
                 f"""
                 INSERT INTO SKI_RESORT_DB.MODELS.ML_PREDICTION_LOG
-                (model_name, model_version, forecast_date, predicted_visitors,
+                (run_id, model_name, model_version, forecast_date, predicted_visitors,
                  day_of_week, month, is_weekend, lag_7, lag_14, rolling_7_mean, request_source)
                 VALUES (
+                    '{run_id}',
                     'VISITOR_FORECASTER', '{version_name}', '{pred_date.strftime('%Y-%m-%d')}',
                     {pred_visitors},
                     {int(day_features.get('day_of_week', pred_date.weekday()))},

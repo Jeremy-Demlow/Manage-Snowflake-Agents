@@ -1,1 +1,1 @@
-# Scheduled Alerts Module
+# Scheduled Alerts - Snowflake UDFs and Procedures

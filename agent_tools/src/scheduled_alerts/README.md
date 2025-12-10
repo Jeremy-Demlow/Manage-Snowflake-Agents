@@ -1,136 +1,55 @@
 # Scheduled Alerts
 
-Production-ready module for sending scheduled Cortex Agent insights via email.
+Snowflake UDFs and procedures for automated alert emails.
 
-## Architecture
+## Files
 
-```
-scheduled_alerts/
-├── agent_client.py      # Cortex Agent REST API client
-├── email_formatter.py   # HTML email formatting with markdown/premailer
-├── alert_service.py     # Alert orchestration service
-├── test_local.py        # Local testing script
-└── job_service/
-    ├── alert_job.py     # SPCS compute pool job
-    └── alert_job_spec.yaml
-```
+| File | Purpose | Snowflake Object |
+|------|---------|------------------|
+| `agent_caller.py` | Call Cortex Agent via PAT | `ASK_RESORT_EXECUTIVE(question)` |
+| `email_formatter.py` | Markdown → styled HTML | `FORMAT_ALERT_EMAIL(question, response)` |
+| `alerts_processor.py` | Batch process alerts | `PROCESS_SCHEDULED_ALERTS()` |
+| `test_local.py` | Local development testing | - |
 
-## Authentication Methods
-
-The `AgentClient` supports multiple authentication methods:
-
-### 1. Snowpark Session (Local Development)
-```python
-from snowflake.snowpark import Session
-from scheduled_alerts.agent_client import AgentClient
-
-session = Session.builder.config("connection_name", "snowflake_agents").create()
-client = AgentClient.from_session(session, agent_name="RESORT_EXECUTIVE_DEV")
-```
-
-### 2. Personal Access Token (PAT) - Simplest for External Systems
-```python
-from scheduled_alerts.agent_client import AgentClient
-
-client = AgentClient.from_pat(
-    agent_name="RESORT_EXECUTIVE_DEV",
-    database="SKI_RESORT_DB",
-    schema="AGENTS",
-    account="xy12345.us-west-2",
-    pat="your_personal_access_token"
-)
-```
-
-Generate PATs in Snowsight: User Menu > My Profile > Personal Access Tokens
-
-### 3. Key-Pair (External Schedulers like Airflow)
-```python
-from scheduled_alerts.agent_client import AgentClient
-
-client = AgentClient.from_key_pair(
-    agent_name="RESORT_EXECUTIVE_DEV",
-    database="SKI_RESORT_DB",
-    schema="AGENTS",
-    account="xy12345",
-    user="MY_USER",
-    private_key_path="/path/to/rsa_key.p8"
-)
-```
-
-### 4. Container Token (SPCS/ML Jobs)
-```python
-from scheduled_alerts.agent_client import AgentClient
-
-# When running on compute pool
-client = AgentClient.from_container(
-    agent_name="RESORT_EXECUTIVE_DEV",
-    database="SKI_RESORT_DB",
-    schema="AGENTS"
-)
-```
-
-**Note:** As of Dec 2024, the SPCS container token is not yet supported for Agent REST API calls. This will work when Snowflake enables it.
-
-## Usage
-
-### Testing Locally
+## Local Testing
 
 ```bash
-# Activate conda environment
+# Set your PAT token
+export SNOWFLAKE_PAT='your-token-here'
+
+# Activate environment
 conda activate snowflake_agents
 
-# Test agent (without sending email)
-cd agent_tools/src/scheduled_alerts
-python test_local.py
+# Run from src directory  
+cd agent_tools/src
+python -m scheduled_alerts.test_local
 
-# Test and send email
-python test_local.py --send
+# Save HTML to inspect formatting
+python -m scheduled_alerts.test_local --save-html output.html
 
-# Custom question
-python test_local.py -q "What is revenue by business unit?" --send
-
-# Process all active alerts
-python test_local.py --process-all
+# Send test email via Snowflake
+python -m scheduled_alerts.test_local --send --email you@example.com
 ```
 
-### Using AlertService
+## Deploy
 
-```python
-from snowflake.snowpark import Session
-from scheduled_alerts.alert_service import AlertService
-
-session = Session.builder.config("connection_name", "snowflake_agents").create()
-service = AlertService.from_session(session)
-
-# Send test alert
-result = service.send_test_alert("user@example.com", "What is total revenue?")
-
-# Process all scheduled alerts
-results = service.process_all_alerts()
+```bash
+cd agent_tools
+rm src.zip && zip -r src.zip src/
+snow sql -q "PUT file://src.zip @SKI_RESORT_DB.MODELS.AGENT_TOOLS_STAGE AUTO_COMPRESS=FALSE OVERWRITE=TRUE"
 ```
 
-## Email Formatting
+Then run the CREATE statements from `sql/scheduled_alerts_setup.sql`.
 
-Emails are formatted using:
-1. `markdown` - Converts agent markdown to HTML
-2. `premailer` - Inlines CSS for email client compatibility
+## Test in Snowflake
 
-The email includes:
-- Professional header with question and timestamp
-- Formatted response with tables, lists, code blocks
-- Branded footer
+```sql
+-- Test agent UDF
+SELECT SKI_RESORT_DB.MODELS.ASK_RESORT_EXECUTIVE('What is total revenue?');
 
-## Dependencies
+-- Test email formatter  
+SELECT SKI_RESORT_DB.MODELS.FORMAT_ALERT_EMAIL('Test question', 'Test **response**');
 
-```
-requests
-markdown
-premailer
-snowflake-snowpark-python
-```
-
-For key-pair auth:
-```
-cryptography
-PyJWT
+-- Send test email
+CALL SKI_RESORT_DB.MODELS.TEST_ALERT_EMAIL('you@example.com', 'What is total revenue?');
 ```

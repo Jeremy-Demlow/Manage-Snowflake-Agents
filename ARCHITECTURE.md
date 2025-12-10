@@ -12,6 +12,7 @@ This platform demonstrates the power of **Snowflake Cortex Intelligence** - enab
 |-------------------------------|---------------|
 | **Cortex Analyst** | Text-to-SQL via semantic models |
 | **Cortex Agent** | Multi-tool orchestration & reasoning |
+| **Cortex Search** | Semantic search over unstructured documents |
 | **Semantic Views** | Business context for AI understanding |
 | **Cortex ML Functions** | Visitor forecasting & predictions |
 
@@ -32,15 +33,20 @@ graph TB
 
     subgraph Intelligence["❄️ SNOWFLAKE INTELLIGENCE"]
         direction TB
-        AGENT[🧠 Cortex Agent<br/>RESORT_EXECUTIVE_DEV]
+        AGENT[🧠 Cortex Agent<br/>RESORT_EXECUTIVE_DEV<br/>16 Tools]
         ANALYST[📊 Cortex Analyst<br/>Text-to-SQL]
+        SEARCH[🔍 Cortex Search<br/>18 Documents]
         TOOLS[🔧 Agent Tools<br/>Email • Forecast • Alerts]
     end
 
-    subgraph Semantic["📐 Semantic Layer"]
+    subgraph Structured["📐 Structured Data"]
         SEM1[sem_customer_behavior]
         SEM2[sem_operations]
         SEM3[sem_revenue]
+    end
+
+    subgraph Unstructured["📄 Unstructured Data"]
+        DOCS[Resort Documents<br/>Policies • Reports • Guides]
     end
 
     subgraph DataWarehouse["❄️ Snowflake Data Warehouse"]
@@ -60,10 +66,12 @@ graph TB
     SLACK --> AGENT
     API --> AGENT
     AGENT --> ANALYST
+    AGENT --> SEARCH
     AGENT --> TOOLS
     ANALYST --> SEM1
     ANALYST --> SEM2
     ANALYST --> SEM3
+    SEARCH --> DOCS
     SEM1 --> FACTS
     SEM2 --> FACTS
     SEM3 --> FACTS
@@ -75,13 +83,15 @@ graph TB
 
     classDef intelligence fill:#29b5e8,stroke:#1a8cba,color:#fff
     classDef semantic fill:#fff3e0,stroke:#f57c00
+    classDef unstructured fill:#e8f5e9,stroke:#388e3c
     classDef warehouse fill:#e3f2fd,stroke:#1976d2
-    classDef pipeline fill:#e8f5e9,stroke:#388e3c
+    classDef pipeline fill:#f3e5f5,stroke:#7b1fa2
     classDef interface fill:#ede7f6,stroke:#512da8
     classDef user fill:#fafafa,stroke:#616161
 
-    class AGENT,ANALYST,TOOLS intelligence
+    class AGENT,ANALYST,SEARCH,TOOLS intelligence
     class SEM1,SEM2,SEM3 semantic
+    class DOCS unstructured
     class FACTS,DIMS,RAW warehouse
     class DBT,GEN,GHA pipeline
     class SLACK,API interface
@@ -140,11 +150,11 @@ graph TB
 
 ---
 
-## 🔧 Agent Tools (15 Total)
+## 🔧 Agent Tools (16 Total)
 
-The `RESORT_EXECUTIVE_DEV` agent has access to 15 specialized tools:
+The `RESORT_EXECUTIVE_DEV` agent has access to 16 specialized tools spanning structured data, unstructured documents, ML predictions, and actions:
 
-### Analytics Tools (10 Semantic Views)
+### Structured Data Tools (10 Semantic Views via Cortex Analyst)
 | Tool | Data Domain | Example Question |
 |------|-------------|------------------|
 | `DailySummaryKPIs` | Executive overview | "How is the resort performing?" |
@@ -158,6 +168,22 @@ The `RESORT_EXECUTIVE_DEV` agent has access to 15 specialized tools:
 | `SafetyIncidents` | Safety tracking | "Incident trends this season?" |
 | `SkiSchoolAnalytics` | Lessons & revenue | "Ski school revenue by lesson type?" |
 
+### Unstructured Data Tool (1 Cortex Search Service)
+| Tool | Content | Example Question |
+|------|---------|------------------|
+| `ResortDocumentsSearch` | 18 documents: policies, reports, guides, memos | "What's our refund policy?" |
+
+**Document Types Available:**
+- 📋 **Policies**: Season pass terms, rental guide, refund policy
+- 📊 **Business**: Q4 earnings, strategic plan, pass holder analysis
+- ⚠️ **Safety**: Mountain safety guide, avalanche protocol
+- 🔧 **Operations**: Lift manual, weather closure policy
+- 👥 **Employee**: Handbook, ski school guidelines
+- 💬 **Feedback**: Guest feedback summary, ops memos
+- 📢 **Marketing**: Campaign briefs and results
+- 🏥 **Incidents**: Monthly incident summaries
+- ❓ **FAQ**: Frequently asked questions
+
 ### ML & Action Tools (5)
 | Tool | Capability | Example |
 |------|------------|---------|
@@ -166,6 +192,17 @@ The `RESORT_EXECUTIVE_DEV` agent has access to 15 specialized tools:
 | `ViewMyAlerts` | List subscriptions | "What alerts am I subscribed to?" |
 | `UnsubscribeAlert` | Cancel subscription | "Stop the daily reports" |
 | `SendEmail` | Send reports now | "Email me this analysis" |
+
+### 🔗 Cross-Data Queries (The Power Move!)
+
+The agent can combine **structured data + unstructured documents** for powerful insights:
+
+| Query Type | Example | Tools Used |
+|------------|---------|------------|
+| **Plan vs Actual** | "Did we hit Q4 revenue targets from our strategic plan?" | Search → Analyst |
+| **Feedback → Data** | "Customer feedback mentions long waits. Show actual data." | Search → Analyst |
+| **Policy + Impact** | "What's our weather closure policy and revenue impact on closure days?" | Search → Analyst |
+| **Campaign ROI** | "Did the Powder Alert email drive visits on Dec 19-20?" | Search → Analyst |
 
 ---
 
@@ -260,7 +297,7 @@ python truelens_eval.py --agent resort_executive --env dev --run-name "v2.1"
 
 ```
 SKI_RESORT_DB/
-├── RAW/                    # Raw transactional data
+├── RAW/                    # Raw transactional data (12 tables)
 │   ├── PASS_USAGE         # Daily customer visits
 │   ├── LIFT_SCANS         # Individual lift rides
 │   ├── TICKET_SALES       # Ticket/pass purchases
@@ -289,10 +326,14 @@ SKI_RESORT_DB/
 │   ├── fact_rentals      # Equipment rentals
 │   └── fact_food_beverage # F&B sales
 │
-├── SEMANTIC/              # Semantic views for Cortex
+├── SEMANTIC/              # Semantic views for Cortex Analyst
 │   ├── sem_customer_behavior
 │   ├── sem_operations
 │   └── sem_revenue
+│
+├── DOCS/                  # Unstructured documents for Cortex Search
+│   ├── RESORT_DOCUMENTS   # 18 documents (policies, reports, guides)
+│   └── RESORT_DOCS_SEARCH # Cortex Search Service
 │
 └── AGENTS/                # Agent definitions
     └── RESORT_EXECUTIVE_DEV
@@ -316,7 +357,7 @@ models:
 - Incremental fact table loads
 - Semantic view generation with `dbt_semantic_view`
 
-### 4. Semantic Layer
+### 4. Semantic Layer (Structured Data)
 
 Each semantic view is designed for Cortex Analyst to understand business context:
 
@@ -326,25 +367,63 @@ Each semantic view is designed for Cortex Analyst to understand business context
 | `sem_operations` | Lift operations | Utilization, wait times, capacity, bottlenecks |
 | `sem_revenue` | Financial performance | Revenue by source, trends, pricing optimization |
 
-### 5. Cortex Intelligence Agent
+### 5. Document Repository (Unstructured Data)
 
-**Agent: `RESORT_EXECUTIVE_DEV`**
+18 documents available via Cortex Search, all referencing actual resort data (lifts, trails, zones):
+
+| Doc ID | Type | Title | Use Case |
+|--------|------|-------|----------|
+| SAFETY-001 | safety | Mountain Safety Guide | Safety protocols, trail info |
+| SAFETY-002 | safety | Avalanche Safety Protocol | Backcountry procedures |
+| OPS-001 | operations | Lift Operations Manual | Lift capacities, staffing |
+| OPS-002 | operations | Weather Closure Policy | Wind/visibility thresholds |
+| BIZ-001 | business | Q4 2024 Earnings Summary | Revenue targets, KPIs |
+| BIZ-002 | business | Season Pass Value Analysis | Pass holder economics |
+| BIZ-003 | business | Strategic Plan 2025-2027 | Goals, initiatives |
+| POL-001 | policy | Season Pass Terms | T&Cs, benefits |
+| POL-002 | policy | Equipment Rental Guide | Packages, sizing |
+| POL-003 | policy | Refund and Credit Policy | Weather, injury policies |
+| HR-001 | employee | Employee Handbook | Scheduling, overtime |
+| HR-002 | employee | Ski School Guidelines | Lesson types, zones |
+| PROD-001 | product | Trail Guide | Trail descriptions, difficulty |
+| FEEDBACK-001 | feedback | Dec 2024 Guest Feedback | Customer complaints, NPS |
+| MEMO-001 | memo | Weekly Ops Memo | Operational decisions |
+| MARKETING-001 | marketing | Powder Alert Campaign | Campaign results |
+| FAQ-001 | faq | Frequently Asked Questions | Common queries |
+| INCIDENT-001 | incident | Monthly Incident Summary | Safety patterns |
+
+**Key Feature:** All documents reference actual data elements (lift names, trail names, customer segments, weather zones) ensuring consistency between structured queries and document search.
+
+### 6. Cortex Intelligence Agent
+
+**Agent: `RESORT_EXECUTIVE_DEV`** - 16 Tools
 
 ```yaml
 tools:
-  - cortex_analyst       # Text-to-SQL via semantic views
-  - forecast_visitors    # ML-based predictions
-  - send_email          # Formatted report delivery
-  - schedule_alert      # Recurring insights
+  # Structured Data (10)
+  - cortex_analyst_views  # Text-to-SQL via 10 semantic views
+
+  # Unstructured Data (1)
+  - cortex_search         # Semantic search over 18 documents
+
+  # ML & Actions (5)
+  - forecast_visitors     # ML-based predictions
+  - send_email           # Formatted report delivery
+  - schedule_alert       # Recurring insights
+  - view_alerts          # List subscriptions
+  - unsubscribe_alert    # Cancel subscriptions
 ```
 
 **Capabilities:**
-- Natural language to SQL translation
+- Natural language to SQL translation (Cortex Analyst)
+- Semantic document search (Cortex Search)
+- **Cross-data reasoning** - combines structured + unstructured
 - Multi-step reasoning across data domains
 - Formatted email reports with charts
 - Scheduled automated insights
+- ML-powered visitor forecasting
 
-### 6. Slackbot Interface
+### 7. Slackbot Interface
 
 ```
 slack_bot/
@@ -451,8 +530,11 @@ slack_bot/
 Manage-Snowflake-Agents/
 │
 ├── 📊 data_generation/
-│   ├── generate_daily_increment.py    # Main data generator
-│   └── utils/                         # Snowflake connection utils
+│   ├── generate_daily_increment.py    # Structured data generator
+│   ├── generate_documents.py          # Unstructured doc generator
+│   ├── load_documents_to_snowflake.py # Load docs + create search
+│   ├── shared.py                      # Constants (lifts, trails, etc.)
+│   └── snowflake_connection.py        # Connection utilities
 │
 ├── 🔄 dbt_ski_resort/
 │   ├── models/
@@ -492,8 +574,9 @@ Manage-Snowflake-Agents/
 
 ## Sample Queries
 
-The agent can answer questions like:
+The agent can answer questions across **structured data**, **unstructured documents**, or **both combined**:
 
+### Structured Data Queries (Cortex Analyst)
 | Category | Example Question |
 |----------|------------------|
 | **Revenue** | "What's our total revenue by business unit this week?" |
@@ -502,6 +585,23 @@ The agent can answer questions like:
 | **Weather Impact** | "How does a powder day affect attendance 24 hours later?" |
 | **Forecasting** | "Predict visitor count for next Saturday" |
 | **Trends** | "Show me the revenue trend for December vs last year" |
+
+### Unstructured Document Queries (Cortex Search)
+| Category | Example Question |
+|----------|------------------|
+| **Policies** | "What's our refund policy for weather closures?" |
+| **Safety** | "What's the avalanche safety protocol?" |
+| **Business** | "What were our Q4 revenue targets?" |
+| **Operations** | "When do we close lifts for high winds?" |
+| **Employee** | "What's the overtime policy during peak season?" |
+
+### Cross-Data Queries (The Power Move! 🔥)
+| Query | What Happens |
+|-------|--------------|
+| "Did we hit the strategic plan's revenue target?" | Search docs for target → Query revenue data → Compare |
+| "Guest feedback mentions long wait times. Show actual data." | Search feedback → Query lift operations → Correlate |
+| "Did the Powder Alert campaign drive visits on Dec 19-20?" | Search campaign doc → Query visitor data → Analyze |
+| "Show safety incidents on trails mentioned in the incident report" | Search incident patterns → Query incident data → Detail |
 
 ---
 
