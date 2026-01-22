@@ -167,6 +167,18 @@ class AgentDeployer:
 
                 tool_spec['tool_spec']['input_schema'] = input_schema
 
+            elif tool_type == 'cortex_search':
+                # Cortex Search service tool
+                search_service = tool.get('cortex_search_service', {})
+                search_db = search_service.get('database', data_db)
+                search_schema = search_service.get('schema', 'DOCS')
+                search_name = search_service.get('name', '')
+
+                tool_resources[tool_name] = {
+                    'search_service': f"{search_db}.{search_schema}.{search_name}",
+                    'max_results': tool.get('max_results', 5)
+                }
+
         # Build instructions
         instructions = self.agent_config.get('instructions', {})
         response_inst = instructions.get('response', '').strip()
@@ -182,10 +194,21 @@ class AgentDeployer:
         model_config = self.env_config.get('model', {})
         orchestration_model = model_config.get('orchestration', 'auto')
 
+        # Get orchestration budget (important for long-running tools like ML)
+        orchestration_budget = self.env_config.get('orchestration', {}).get('budget', {})
+        budget_seconds = orchestration_budget.get('seconds', 120)  # Default 2 min for ML tools
+        budget_tokens = orchestration_budget.get('tokens', 32000)
+
         # Final specification
         spec = {
             'models': {
                 'orchestration': orchestration_model
+            },
+            'orchestration': {
+                'budget': {
+                    'seconds': budget_seconds,
+                    'tokens': budget_tokens
+                }
             },
             'instructions': {
                 'response': response_inst,

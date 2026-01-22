@@ -56,6 +56,10 @@ sample_questions:
   - "I want weekly revenue reports sent to my email"
   - "What alerts am I subscribed to?"
   - "Unsubscribe me from the daily updates"
+  # PowerPoint Reports
+  - "Send this analysis as a PowerPoint to my email"
+  - "Create a presentation from this revenue breakdown"
+  - "I need slides for my board meeting - top metrics please"
 
 # -----------------------------------------------------------------------------
 # TOOLS (6 semantic views - comprehensive executive view)
@@ -739,7 +743,87 @@ tools:
       3. Confirm successful delivery
 
   # ---------------------------------------------------------------------------
-  # TOOL 16: Resort Documents Search (Cortex Search - Unstructured)
+  # TOOL 16: Send Conversation Report (Email + PowerPoint)
+  # ---------------------------------------------------------------------------
+  - name: SendConversationReport
+    type: procedure
+
+    identifier:
+      database: AGENT_TOOLS_CENTRAL
+      schema: AGENT_TOOLS
+      name: SEND_CONVERSATION_REPORT
+
+    parameters:
+      - name: recipient
+        type: STRING
+        description: "Email address to send the report to"
+        required: true
+      - name: question
+        type: STRING
+        description: "The original question that was asked"
+        required: true
+      - name: response
+        type: STRING
+        description: "The full response/analysis to include in the report"
+        required: true
+      - name: report_title
+        type: STRING
+        description: "Optional title for the report (defaults to auto-generated)"
+        required: false
+
+    description: |
+      Send the current conversation as a professional email with PowerPoint attachment.
+      Creates a downloadable PowerPoint presentation from the conversation.
+
+      Use this tool when a user asks:
+      - "Send this as a PowerPoint"
+      - "Create a presentation from this"
+      - "Email me this with a PowerPoint"
+      - "Can I get slides for this?"
+      - "Export this to PowerPoint"
+      - "Make this into a deck"
+      - "I need to present this to my team"
+
+      WHAT IT CREATES:
+      - Professional PowerPoint presentation with:
+        * Title slide with report name and date
+        * Executive summary slide with key insights
+        * Q&A content slides with formatted response
+        * Data tables (if present in the response)
+        * Auto-generated charts (if numeric data is present)
+        * Closing slide with branding
+
+      - Email with:
+        * Beautiful HTML formatting
+        * Download button for the PowerPoint
+        * Full response text inline
+        * 24-hour download link (presigned URL)
+
+      HOW TO USE:
+      1. First answer the user's question completely
+      2. When they ask for a PowerPoint/presentation, use this tool
+      3. Pass the ORIGINAL question they asked
+      4. Pass your FULL response (including markdown tables)
+      5. Optionally provide a descriptive report title
+
+      BEST PRACTICES:
+      - Include markdown tables in the response - they become PowerPoint tables
+      - Use headers (## and ###) - they create slide sections
+      - Use bullet points - they format nicely in slides
+      - Ask for email if not provided
+      - Suggest a report title that matches the content
+
+      EXAMPLE:
+      User: "What were our top 5 products? Can you make a PowerPoint?"
+      → First run RevenueAnalytics query
+      → Then call SendConversationReport with:
+        - recipient: user's email
+        - question: "What were our top 5 products?"
+        - response: <your full analysis with tables>
+        - report_title: "Top Products Analysis - Q4 2025"
+
+  # ---------------------------------------------------------------------------
+  # TOOL 17: Resort Documents Search (Cortex Search - Unstructured)
   # ---------------------------------------------------------------------------
   - name: ResortDocumentsSearch
     type: cortex_search
@@ -968,6 +1052,22 @@ instructions:
     3. Include the analysis/report they requested
     4. Use a clear subject line that describes the content
     5. Confirm the email was sent successfully
+
+    For POWERPOINT REPORTS:
+    1. Use SendConversationReport when user says:
+       - "Send this as a PowerPoint"
+       - "Create a presentation"
+       - "Make slides from this"
+       - "I need to present this"
+       - "Export to PowerPoint"
+    2. First COMPLETE your analysis with all data and tables
+    3. Then call SendConversationReport with:
+       - recipient: Ask for email if not provided
+       - question: The user's ORIGINAL question
+       - response: Your FULL analysis (include markdown tables!)
+       - report_title: Descriptive title like "Q4 Revenue Analysis"
+    4. The tool creates a professional PowerPoint + email with download link
+    5. Confirm the report was sent and explain the 24-hour download window
 
     **EDGE CASE HANDLING:**
     - Real-time data: "My data is updated nightly. For real-time, check operations dashboards."

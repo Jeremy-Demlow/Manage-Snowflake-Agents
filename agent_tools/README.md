@@ -14,6 +14,11 @@ agent_tools/
 │   ├── email_tools/
 │   │   ├── __init__.py  
 │   │   └── sender.py     # Email sender implementation
+│   ├── presentation_tools/
+│   │   ├── __init__.py
+│   │   ├── pptx_generator.py      # PowerPoint generation from conversations
+│   │   ├── conversation_reporter.py  # Email + PPTX attachment handler
+│   │   └── setup_stage.sql        # Stage setup for report files
 │   └── web_tools/
 │       ├── __init__.py
 │       ├── core.py       # Web scraping core functionality
@@ -24,7 +29,8 @@ agent_tools/
 │   ├── test_email_sender.py
 │   └── test_web_scraper.py
 │
-└── test_local_scraper.py # Standalone local testing script
+├── test_local_scraper.py # Standalone local testing script
+└── test_conversation_report.py  # PowerPoint generation test
 ```
 
 ## 🚀 **Snowflake CLI + Snowpark Deployment**
@@ -59,7 +65,7 @@ snow snowpark deploy --connection my_connection
 - Creates database `AGENT_TOOLS_CENTRAL` if needed
 - Creates schema `AGENT_TOOLS` if needed  
 - Creates stage `AGENT_TOOLS_STAGE` for artifacts
-- Deploys procedures: `SEND_MAIL`, `WEB_SCRAPE`
+- Deploys procedures: `SEND_MAIL`, `WEB_SCRAPE`, `SEND_CONVERSATION_REPORT`
 
 ## 📋 **snowflake.yml Configuration**
 
@@ -145,6 +151,53 @@ CALL AGENT_TOOLS_CENTRAL.AGENT_TOOLS.WEB_SCRAPE('https://example.com');
 - **External Access**: Secure web scraping via Snowflake integrations
 - **Content Extraction**: Up to 5,000 characters with smart summarization
 
+### 3. Conversation Report (`SEND_CONVERSATION_REPORT`)
+
+**Purpose**: Send SI conversations as professional emails with PowerPoint attachments
+
+**Usage**:
+```sql
+CALL AGENT_TOOLS_CENTRAL.AGENT_TOOLS.SEND_CONVERSATION_REPORT(
+    'recipient@example.com',
+    'What were our top products?',  -- question
+    '## Analysis\n| Product | Revenue |\n...',  -- response (markdown)
+    'Q4 Sales Report'  -- optional title
+);
+```
+
+**Features**:
+- **PowerPoint Generation**: Auto-creates professional slides from conversation
+- **Executive Summary**: Extracts key insights for first slide
+- **Data Tables**: Converts markdown tables to PowerPoint tables
+- **Charts**: Auto-generates bar charts from tabular data
+- **Presigned URL**: Secure 24-hour download link (Snowflake doesn't support direct attachments)
+- **Styled Email**: Beautiful HTML email with download button
+
+**Setup Required**:
+```sql
+-- Run once to create the report files stage
+@src/presentation_tools/setup_stage.sql
+```
+
+**Agent Integration**:
+```yaml
+- name: "Send_Conversation_Report"
+  type: "generic"
+  description: "Send the current conversation as a professional email with PowerPoint attachment"
+  input_schema:
+    type: "object"
+    properties:
+      recipient: { type: "string", description: "Email address" }
+      question: { type: "string", description: "The question asked" }
+      response: { type: "string", description: "The agent's response" }
+      report_title: { type: "string", description: "Optional report title" }
+    required: ["recipient", "question", "response"]
+  resource:
+    type: "procedure"
+    identifier: "AGENT_TOOLS_CENTRAL.AGENT_TOOLS.SEND_CONVERSATION_REPORT"
+    name: "SEND_CONVERSATION_REPORT(VARCHAR, VARCHAR, VARCHAR, VARCHAR)"
+```
+
 ## 🧪 **Local Testing**
 
 ### Run Local Tests
@@ -158,6 +211,9 @@ python -m pytest tests/test_web_scraper.py
 
 # Standalone web scraper testing
 python test_local_scraper.py
+
+# PowerPoint generation testing
+python test_conversation_report.py
 ```
 
 ### Local Testing Features

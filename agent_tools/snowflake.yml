@@ -95,6 +95,36 @@ entities:
       - snowflake-snowpark-python
 
   # ==========================================================================
+  # CONVERSATION REPORT TOOL - Email SI conversations with PowerPoint attachments
+  # ==========================================================================
+  send_conversation_report:
+    type: "procedure"
+    identifier:
+      name: "send_conversation_report"
+      database: "AGENT_TOOLS_CENTRAL"
+      schema: "AGENT_TOOLS"
+    handler: "presentation_tools.conversation_reporter.send_conversation_report"
+    signature:
+      - name: "recipient"
+        type: "TEXT"
+      - name: "question"
+        type: "TEXT"
+      - name: "response"
+        type: "TEXT"
+      - name: "report_title"
+        type: "TEXT"
+        default: "null"
+    returns: "TEXT"
+    stage: "AGENT_TOOLS_CENTRAL.AGENT_TOOLS.AGENT_TOOLS_STAGE"
+    artifacts: ["src/"]
+    runtime: "3.11"
+    artifact_repository: snowflake.snowpark.pypi_shared_repository
+    packages:
+      - snowflake-snowpark-python
+      - python-pptx
+      - markdown
+
+  # ==========================================================================
   # LEGACY TOOLS (kept for backwards compatibility)
   # ==========================================================================
 

@@ -338,11 +338,20 @@ def _handle_question(
         blocks = formatter.format_response(result, question, emoji)
         say(blocks=blocks, text=result.answer[:500], thread_ts=thread_ts)
 
+        # Debug: log what we got
+        logger.info(
+            f"Result: has_data={result.has_data}, has_chart={result.has_chart}, chart_specs={len(result.chart_specs)}, renderer_available={chart_renderer.available}"
+        )
+
         # Upload charts
         if result.chart_specs and chart_renderer.available:
-            for idx, png in enumerate(chart_renderer.render_all(result)):
+            logger.info(f"📊 Attempting to render {len(result.chart_specs)} chart(s)...")
+            rendered_charts = chart_renderer.render_all(result)
+            logger.info(f"📊 Rendered {len(rendered_charts)} chart(s)")
+            for idx, png in enumerate(rendered_charts):
                 try:
                     chart_type = result.chart_specs[idx].get("type", "chart")
+                    logger.info(f"📊 Uploading chart {idx+1}: {chart_type}")
                     app.client.files_upload_v2(
                         channel=channel,
                         file=png.getvalue(),
@@ -350,6 +359,7 @@ def _handle_question(
                         title=f"📊 {chart_type.title()}",
                         thread_ts=thread_ts,
                     )
+                    logger.info(f"✅ Chart {idx+1} uploaded successfully")
                 except Exception as e:
                     logger.warning(f"Failed to upload chart: {e}")
 

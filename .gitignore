@@ -90,3 +90,30 @@ snowflake_agents/generated/
 # Local test outputs
 test_output/
 output/
+
+# Environment files (CRITICAL - secrets)
+.env
+.env.*
+*.env
+!*.env.example
+!*.env.template
+!.env.example
+!.env.template
+
+# Additional certificate formats
+*.p12
+*.pfx
+*.cer
+
+# dbt profiles (contains passwords)
+profiles.yml
+
+# Snowflake private key files
+*_rsa
+*_rsa.pub
+rsa_key.p8
+
+# Terraform state (if used)
+*.tfstate
+*.tfstate.*
+.terraform/

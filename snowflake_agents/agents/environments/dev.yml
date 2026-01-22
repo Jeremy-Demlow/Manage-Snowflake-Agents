@@ -33,6 +33,12 @@ warehouse: COMPUTE_WH
 model:
   orchestration: claude-sonnet-4-5
 
+# Orchestration budget (important for ML tools that can take 2+ min)
+orchestration:
+  budget:
+    seconds: 300  # 5 minutes for complex ML forecasts
+    tokens: 50000
+
 # Development-specific settings
 settings:
   log_level: DEBUG
